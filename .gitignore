@@ -1,0 +1,4 @@
+evict_icloud
+__pycache__/
+*.pyc
+.DS_Store
