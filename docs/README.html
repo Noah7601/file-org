@@ -80,7 +80,7 @@ a{color:var(--accent)}
   <div class="key">핵심 원칙은 하나입니다. <b>사용자가 되돌릴 수 없는 일은 하지 않는다.</b> 삭제하지 않고, 덮어쓰지 않고, 모든 변경은 미리 보여 주고 승인을 받은 뒤 실행하고, 끝나면 독립적으로 검증하고 기록합니다.</div>
   <nav class="toc" aria-label="목차">
     <a href="#when">1 언제 쓰나</a><a href="#rules">2 원칙 8가지</a><a href="#loop">3 작업 흐름</a><a href="#start">4 시작하기</a>
-    <a href="#tools">5 스크립트 사용법</a><a href="#cloud">6 클라우드 폴더 주의</a><a href="#naming">7 폴더 체계와 이름 규칙</a><a href="#verify">8 검증과 기록</a><a href="#faq">9 자주 묻는 질문</a><a href="#terms">10 용어</a>
+    <a href="#tools">5 스크립트 사용법</a><a href="#cloud">6 클라우드 폴더 주의</a><a href="#naming">7 폴더 체계와 이름 규칙</a><a href="#verify">8 검증과 기록</a><a href="#tower">정리 뒤: 체크기와 관제탑</a><a href="#faq">9 자주 묻는 질문</a><a href="#terms">10 용어</a>
   </nav>
 </header>
 
@@ -125,7 +125,7 @@ a{color:var(--accent)}
 <p>Python 3.8 이상이면 macOS·Windows·Linux에서 같은 명령으로 돕니다. 표준 라이브러리만 씁니다.</p>
 <pre><code>git clone https://github.com/Noah7601/file-org ~/.claude/skills/file-org
 python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
-<p>두 번째 줄은 자체 검사입니다. 임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 20여 개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개)을 확인합니다. 새 컴퓨터에서는 먼저 이것을 돌립니다. Windows는 <code>py -3</code>로 실행합니다.</p>
+<p>두 번째 줄은 자체 검사입니다. 임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 39개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안)을 확인합니다. 새 컴퓨터에서는 먼저 이것을 돌립니다. Windows는 <code>py -3</code>로 실행합니다.</p>
 <p>Codex를 쓰면 같은 내용을 <code>~/.codex/skills/file-org</code>에 둡니다. AI 도우미에게 "파일 정리해줘", "Drive·OneDrive·iCloud 합쳐줘", "중복 파일 찾아줘"처럼 말하면 이 설명서가 적용됩니다.</p>
 
 <h3>처음 정하는 세 가지</h3>
@@ -224,6 +224,18 @@ _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
 <h3>보고 형식</h3>
 <p>단계가 끝날 때마다 ① 결과 한 줄(무엇이 몇 건, 오류 몇 건, 검증 결과) ② 표(대상/건수/비고) ③ 기록(로그 행 수, 산출물 경로, 커밋) ④ 남은 사용자 결정 번호 목록. 예: "복사 3,499/3,499 · 오류 0 · 독립 검증 3,499/3,499 · 업로드 확인 100%."</p>
 <p>산출물 폴더는 git으로 관리하고 단계마다 커밋합니다. 커밋 전에 근거 CSV의 주민번호·계좌·전화 패턴을 마스킹합니다. 비밀키·인증서(<code>.key</code>, <code>.p12</code>, 복구키 txt)는 어떤 클라우드에도 올리지 않고 제자리에 두고 사용자에게만 알립니다.</p>
+
+<h2 id="tower"><small>+</small>정리 뒤: 체크기와 관제탑</h2>
+<p>정리가 끝나도 "이 거래에 필요한 서류가 다 있는가"는 폴더만 봐서는 모릅니다. 실제로 제출 zip 안에만 있던 서류 13건이 "없는 서류"로 남아 있었습니다. 그래서 세 도구를 씁니다. 자세한 절차는 <code>references/docsets.md</code>.</p>
+<div class="tbl"><table>
+  <thead><tr><th>도구</th><th>하는 일</th><th>동작</th></tr></thead>
+  <tbody>
+    <tr><td><code>check_docsets.py --root DIR --rules JSON</code></td><td>거래 하나 = 하위폴더 하나로 묶인 증빙을, 제출처 지침에서 옮긴 필수 서류 목록(규칙 JSON)으로 검사. 상태는 있음 · zip 안에만 · 다른 폴더 · 부족 · 없음.</td><td>읽기 전용, 보고서만</td></tr>
+    <tr><td><code>extract_zip_only.py --root DIR --log LOG</code></td><td>제출 zip 안에만 있고 낱개가 없는 서류를 같은 폴더에 꺼내 둠. zip은 그대로.</td><td>dry-run → 복사</td></tr>
+    <tr><td><code>control_tower.py --root 마스터 --checks 보고서폴더</code></td><td>관제탑. 폴더 지도(용량 비례 타일, 눌러서 내려가기, Finder에서 열기), 사업별 완결·누락, 채울 서류, 최근 기록. 새로고침 버튼은 이름·크기로만 다시 셈.</td><td>보기 전용, 이 컴퓨터에서만</td></tr>
+  </tbody>
+</table></div>
+<div class="key">관제탑은 <code>127.0.0.1</code>에만 열리고, 다른 웹사이트가 몰래 부르거나 같은 와이파이의 다른 기기가 접속하는 것을 막습니다. 이동·삭제 버튼은 없고, 파일 열기는 마스터 안의 실행 파일이 아닌 것만 됩니다. 휴대폰으로 할 일을 보려면 체크기 결과를 노션 같은 메모 도구로 옮기는 예약 작업을 붙입니다(선택).</div>
 
 <h2 id="faq"><small>9</small>자주 묻는 질문</h2>
 <details open><summary>삭제는 언제 하나요?</summary><p>도구는 하지 않습니다. 격리 폴더에 모인 중복·스텁·빈 폴더를 사용자가 Finder·탐색기·웹에서 휴지통으로 보냅니다. 삭제 직전에는 보관본이 실제로 존재하는지 sha1로 다시 대조합니다.</p></details>

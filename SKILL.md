@@ -59,7 +59,10 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 ### 2.7 후처리와 "사용자 결정 목록"
 자동으로 안전하게 할 수 있는 일이 소진되면 멈추고, 남은 것을 **결정이 필요한 항목**으로 번호 매겨 보고한다(휴지통 비우기, 격리 폴더 삭제, 스텁 삭제, 수동 분류 잔여, 복구 불가 건). 사용자가 번호로 답하면 그 항목만 처리한다.
 
-### 2.8 온톨로지 — 정리가 끝난 뒤 → `references/ontology.md`
+### 2.8 문서세트 검증과 관제탑 → `references/docsets.md`
+진행 중인 프로젝트의 증빙을 거래 하나 = 하위폴더 하나로 묶고, 제출처 지침의 필수 서류 목록을 규칙 파일로 옮겨 `check_docsets.py`로 검사한다(파일명 기준, 읽기 전용). 제출 zip 안에만 있는 서류는 `extract_zip_only.py`로 낱개를 복사해 둔다. 전체 상태는 `control_tower.py`(이 맥에서만 열리는 보기 전용 화면, 새로고침 버튼)로 본다. 사용자가 "지도", "관제탑", "한눈에", "빠진 서류", "정산 체크"를 꺼내면 이 절이다.
+
+### 2.9 온톨로지 — 정리가 끝난 뒤 → `references/ontology.md`
 폴더 경로는 "이 네 파일이 한 세트"라는 관계를 담지 못한다. 마스터가 깨끗해진 **다음에** 개체 5종(프로젝트·거래처·문서세트·의무기한·저장위치)과 관계 4개만으로 시작하고, 지도가 아니라 **검증 규칙**(증빙 세트 완결성)으로 쓴다. 그래프는 자동 생성 도구로 뽑아 손으로 유지하지 않고, 메모 도구(노션 등)는 사람이 쓰는 상태·기한·판단만 맡는다. 개체 정렬은 모델이 제안만, 실행은 어떤 모델도 하지 않는다. 깨진 마스터 위에 먼저 만들지 않는다.
 
 ## 3. 번들 스크립트
@@ -72,11 +75,14 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 | `find_dupes.py <root> [--quarantine DIR] [--apply]` | 내용 동일 중복 찾기(크기 → sha1) | dry-run |
 | `apply_moves.py --root R --proposals CSV --log LOG [--apply] [--dedupe]` | 승인된 제안 CSV(src, dest, why[, approved]) 적용 | dry-run, 덮어쓰기 없음, 사후 검증, 로그 |
 | `copy_tree.py SRC DST [--exclude ...]` | 클라우드 전용 원본도 견디는 파일 단위 복사(재시도·재개·검증) | 복사(삭제·덮어쓰기 없음, `.part`에 쓴 뒤 이름 변경, 동명 다른 파일은 충돌로 보고) |
+| `check_docsets.py --root DIR --rules JSON [--out D --name N]` | 거래 폴더별 필수 서류 검사(있음·zip 안에만·다른 폴더·부족·없음) | 읽기 전용, 보고서만 |
+| `extract_zip_only.py --root DIR --log LOG [--apply]` | 제출 zip 안에만 있는 서류를 낱개로 복사 | dry-run, zip 유지, 덮어쓰기 없음 |
+| `control_tower.py --root R [--checks D --refresh-cmd C]` | 관제탑: 폴더 지도·사업 보드·할 일·최근 기록, 새로고침 버튼 | 보기 전용, 127.0.0.1 |
 | `evict_icloud.swift` | iCloud 로컬 사본 축출(클라우드 원본 불변), **macOS 전용** | `swiftc -O evict_icloud.swift -o evict_icloud` |
 
-새 환경에서는 먼저 `python3 tests/smoke_test.py`를 돌린다(임시 폴더에 시험 트리를 만들어 네 스크립트를 dry-run→apply로 돌리고 20여 개 항목을 검사, 실패 시 종료 코드 1). `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 lstat만으로 확인한다. macOS·Windows 11에서 전부 통과한 상태가 기준이다.
+새 환경에서는 먼저 `python3 tests/smoke_test.py`를 돌린다(임시 폴더에 시험 트리를 만들어 네 스크립트를 dry-run→apply로 돌리고 39개 항목을 검사, 실패 시 종료 코드 1). `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 lstat만으로 확인한다. macOS·Windows 11에서 전부 통과한 상태가 기준이다.
 
-스크립트를 새로 짜기 전에 이 다섯으로 되는지 먼저 본다. 새로 짜면 같은 규칙(dry-run 기본, 로그, NFC, 덮어쓰기 없음)을 지킨다.
+스크립트를 새로 짜기 전에 이 도구들로 되는지 먼저 본다. 새로 짜면 같은 규칙(dry-run 기본, 로그, NFC, 덮어쓰기 없음)을 지킨다.
 
 ## 4. 보고 형식
 
@@ -101,4 +107,5 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 - `references/cloud-fs.md` — Google Drive · OneDrive · iCloud Drive의 함정과 대처, macOS·Windows 각각(필독, 클라우드가 끼면)
 - `references/classify.md` — 근거 추출, 신뢰도, 배치 승인 마크다운, 동명·중복 정책
 - `references/log-format.md` — `moves_v2.csv` 스키마, 검증 루틴, 커밋 규칙
+- `references/docsets.md` — 문서세트 검증(거래 폴더, 규칙 파일, 체크기, 제출 zip), 관제탑, 메모 도구 연동, 로컬 서버 보안 기준
 - `references/ontology.md` — 정리 후 단계: 최소 온톨로지(개체 5·관계 4), 문서세트 검증 규칙, 자동 그래프 + 사람용 메모 레이어, 개체 정렬에서 모델의 역할과 한계

@@ -5,7 +5,7 @@
 
 Builds a small tree (Korean names incl. an NFD one, identical/different same-name files, a 0-byte file,
 an excluded node_modules), then runs inventory → find_dupes → apply_moves --dedupe --mkdir → find_dupes --apply
-→ copy_tree twice → copy_tree onto a pre-filled destination (no overwrite, no .part). Only the work dir is written; --cloud-dir is never read, only lstat'ed.
+→ copy_tree twice → copy_tree onto a pre-filled destination (no overwrite, no .part) → docset checker, zip extraction, control tower functions. Only the work dir is written; --cloud-dir is never read, only lstat'ed.
 Verified 2026-11 on macOS 26 and Windows 11 (Python 3.12). Exit code 1 on any FAIL."""
 import argparse, csv, hashlib, os, shutil, subprocess, sys, tempfile, unicodedata
 for _s in (sys.stdout, sys.stderr):
@@ -125,6 +125,53 @@ if unreadable:
     check("copy_tree 읽기 실패 → 오류 1, 잘린 파일 없음", "오류 1" in out and not os.path.exists(os.path.join(DC, "noread.txt")), last(out, -2))
     os.chmod(unreadable, 0o644)
 check("copy_tree .part 잔여 없음", not any(n.endswith(".part") for dp, dn, fn in os.walk(WORK) for n in fn))
+
+# 7. 문서세트 체크기 · 제출 zip 낱개 보관 · 관제탑(서버는 띄우지 않고 함수만)
+import zipfile
+EV = os.path.join(WORK, "ev"); RULES = os.path.join(os.path.dirname(SK), "references", "docset_rules.example.json")
+for d in ("외주_디자인_거래처A_2603", "구매_원료_거래처B_2602"): os.makedirs(os.path.join(EV, d))
+def ev(rel, data=b"x"):
+    p = os.path.join(EV, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "wb") as f: f.write(data)
+for f in ("1_과업지시서_거래처A.pdf", "2_계약서_거래처A.pdf", "3_견적서_거래처A.pdf", "4_비교견적서_C.pdf", "4_비교견적서_D.pdf",
+          "6_사업자등록증_거래처A.pdf", "8_이체확인증_거래처A.pdf", "9_검수확인서_거래처A.pdf"): ev("외주_디자인_거래처A_2603/" + f)
+with zipfile.ZipFile(os.path.join(EV, "외주_디자인_거래처A_2603", "제출본.zip"), "w") as z:
+    z.writestr("5_세금계산서_거래처A.pdf", b"tax"); z.writestr("7_통장사본_거래처A.pdf", b"bank")
+for f in ("1_구매계획서.pdf", "2_견적서_거래처B.pdf", "3_세금계산서_거래처B.pdf", "입고사진.jpg"): ev("구매_원료_거래처B_2602/" + f)
+ev("../계약·변경/사업자등록증_거래처B.pdf")
+OUTD = os.path.join(WORK, "checks")
+rc, out = run("check_docsets.py", "--root", EV, "--rules", RULES, "--out", OUTD, "--name", "시험")
+rows = list(csv.DictReader(open(os.path.join(OUTD, "시험_warnings.csv"), encoding="utf-8-sig")))
+st = {(r["folder"][:2], r["item"]): r["status"] for r in rows}
+check("체크기 실행 rc=0", rc == 0, last(out))
+check("체크기: zip 안에만 있는 서류를 구분", st.get(("외주", "세금계산서 또는 카드전표")) == "zip 안에만" and st.get(("외주", "거래처 통장사본")) == "zip 안에만", str(st))
+check("체크기: 교차 폴더에 있는 서류는 '다른 폴더'", st.get(("구매", "거래처 사업자등록증")) == "다른 폴더")
+check("체크기: 진짜 누락은 '없음'", st.get(("구매", "이체확인증")) == "없음")
+check("체크기는 파일을 안 옮김", len(os.listdir(os.path.join(EV, "외주_디자인_거래처A_2603"))) == 9)
+ZLOG = os.path.join(WORK, "zlog.csv")
+rc, out = run("extract_zip_only.py", "--root", EV, "--log", ZLOG)
+check("zip 꺼내기 dry-run 2건·로그 없음", "꺼낼 파일 2개" in out and not os.path.exists(ZLOG), last(out, 0))
+rc, out = run("extract_zip_only.py", "--root", EV, "--log", ZLOG, "--apply")
+zdir = os.path.join(EV, "외주_디자인_거래처A_2603")
+check("zip 꺼내기 적용: 낱개 2건 복사·zip 유지", "복사 2" in out and os.path.exists(os.path.join(zdir, "5_세금계산서_거래처A.pdf")) and os.path.exists(os.path.join(zdir, "제출본.zip")), last(out))
+rc, out = run("check_docsets.py", "--root", EV, "--rules", RULES, "--out", OUTD, "--name", "시험")
+st2 = {(r["folder"][:2], r["item"]): r["status"] for r in csv.DictReader(open(os.path.join(OUTD, "시험_warnings.csv"), encoding="utf-8-sig"))}
+check("꺼낸 뒤 재검사: '있음'으로 바뀜", ("외주", "세금계산서 또는 카드전표") not in st2)
+sys.path.insert(0, SK); import control_tower as ct
+tree = ct.scan(SRC)
+n_walk = sum(1 for dp, dn, fn in os.walk(SRC) if "node_modules" not in dp for f in fn if not f.startswith("."))
+check("관제탑 scan: 파일 수·0바이트가 직접 센 값과 같음", tree["files"] == n_walk and tree["zero"] == 1, f"scan {tree['files']} / walk {n_walk} · zero {tree['zero']}")
+progs = ct.read_checks(OUTD)
+check("관제탑이 체크기 보고서를 읽음", progs and progs[0]["folders"] and any(f["missing"] for f in progs[0]["folders"]), str([(f["folder"][:8], f["missing"]) for f in progs[0]["folders"]]) if progs else "")
+class _A: root = SRC; log = None; checks = OUTD; refresh_cmd = None; graph_url = None
+tw = ct.Tower(_A())
+check("관제탑 파일 열기 제한: 마스터 밖·실행 파일 거부", tw.resolve("../../etc") is None and tw.resolve("x.app") is None and tw.resolve("90_미디어") is not None)
+H = ct.make_handler(tw, 8765)
+class _R(H):
+    def __init__(self, h): self.headers = h
+ok_cases = [({"Host": "localhost:8765", "X-Tower": "1", "Sec-Fetch-Site": "same-origin"}, True, True), ({"Host": "localhost:8765", "Sec-Fetch-Site": "cross-site", "X-Tower": "1"}, True, False),
+            ({"Host": "localhost:8765"}, True, False), ({"Host": "evil.test:8765"}, False, False), ({"Host": "127.0.0.1:8765"}, False, True)]
+check("관제탑 요청 검사(다른 사이트·다른 호스트·헤더 없는 쓰기 거부)", all(_R(h).allowed(m) == want for h, m, want in ok_cases))
 
 # 6. optional: cloud-only detection on a real sync folder, lstat only (nothing is opened)
 if a.cloud_dir:
