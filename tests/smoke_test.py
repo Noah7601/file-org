@@ -7,7 +7,7 @@ Builds a small tree (Korean names incl. an NFD one, identical/different same-nam
 an excluded node_modules), then runs inventory → find_dupes → apply_moves --dedupe --mkdir → find_dupes --apply
 → copy_tree twice → copy_tree onto a pre-filled destination (no overwrite, no .part) → docset checker, zip extraction, control tower functions. Only the work dir is written; --cloud-dir is never read, only lstat'ed.
 Verified 2026-11 on macOS 26 and Windows 11 (Python 3.12). Exit code 1 on any FAIL."""
-import argparse, csv, hashlib, os, shutil, subprocess, sys, tempfile, unicodedata
+import argparse, csv, hashlib, json, os, shutil, subprocess, sys, tempfile, time, unicodedata
 for _s in (sys.stdout, sys.stderr):
     try: _s.reconfigure(encoding="utf-8")
     except (AttributeError, ValueError): pass
@@ -163,7 +163,7 @@ n_walk = sum(1 for dp, dn, fn in os.walk(SRC) if "node_modules" not in dp for f 
 check("관제탑 scan: 파일 수·0바이트가 직접 센 값과 같음", tree["files"] == n_walk and tree["zero"] == 1, f"scan {tree['files']} / walk {n_walk} · zero {tree['zero']}")
 progs = ct.read_checks(OUTD)
 check("관제탑이 체크기 보고서를 읽음", progs and progs[0]["folders"] and any(f["missing"] for f in progs[0]["folders"]), str([(f["folder"][:8], f["missing"]) for f in progs[0]["folders"]]) if progs else "")
-class _A: root = SRC; log = None; checks = OUTD; refresh_cmd = None; graph_url = None
+class _A: root = SRC; log = None; checks = OUTD; refresh_cmd = None; graph_url = None; watch = None
 tw = ct.Tower(_A())
 check("관제탑 파일 열기 제한: 마스터 밖·실행 파일 거부", tw.resolve("../../etc") is None and tw.resolve("x.app") is None and tw.resolve("90_미디어") is not None)
 H = ct.make_handler(tw, 8765)
@@ -172,6 +172,28 @@ class _R(H):
 ok_cases = [({"Host": "localhost:8765", "X-Tower": "1", "Sec-Fetch-Site": "same-origin"}, True, True), ({"Host": "localhost:8765", "Sec-Fetch-Site": "cross-site", "X-Tower": "1"}, True, False),
             ({"Host": "localhost:8765"}, True, False), ({"Host": "evil.test:8765"}, False, False), ({"Host": "127.0.0.1:8765"}, False, True)]
 check("관제탑 요청 검사(다른 사이트·다른 호스트·헤더 없는 쓰기 거부)", all(_R(h).allowed(m) == want for h, m, want in ok_cases))
+
+# 8. 지속 관리(watch.py): 기준 사진 → 변화 판정
+WR, WS = os.path.join(WORK, "wroot"), os.path.join(WORK, "wstate")
+def wput(rel, data):
+    p = os.path.join(WR, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "wb") as f: f.write(data)
+wput("10_회사/a.pdf", b"aaaa"); wput("20_재무/b.pdf", b"bbbb"); wput("20_재무/c.pdf", b"cccc"); wput("30_계약/d.pdf", b"dddd")
+rc, out = run("watch.py", "--root", WR, "--state", WS)
+check("watch 첫 실행은 기준 사진만", rc == 0 and "기준 사진" in out, last(out))
+os.makedirs(os.path.join(WR, "90_보관"), exist_ok=True); os.rename(os.path.join(WR, "20_재무/b.pdf"), os.path.join(WR, "90_보관/b.pdf"))   # 이동
+os.remove(os.path.join(WR, "20_재무/c.pdf"))                                    # 사라짐
+open(os.path.join(WR, "30_계약/d.pdf"), "wb").close()                            # 0바이트가 됨
+wput("새파일.pdf", b"new"); wput("00_INBOX/a.pdf", b"aaaa")                      # 맨 위 새 파일, 중복 후보
+time.sleep(1.1)
+rc, out = run("watch.py", "--root", WR, "--state", WS)
+W = json.load(open(os.path.join(WS, "watch_latest.json"), encoding="utf-8"))
+check("watch: 이동을 사라짐과 구분", len(W["moved"]) == 1 and W["moved"][0]["to"].endswith("90_보관/b.pdf"), str(W["moved"]))
+check("watch: 진짜 사라진 파일", [g["path"] for g in W["gone"]] == ["master/20_재무/c.pdf"], str(W["gone"]))
+check("watch: 새 0바이트", W["new_zero"] == ["master/30_계약/d.pdf"], str(W["new_zero"]))
+check("watch: 새 파일 위치·중복 후보", {x["where"] for x in W["new"]} == {"마스터 맨 위", "INBOX"} and len(W["dup_candidates"]) == 1, str(W["new"]))
+check("watch는 파일을 안 옮김", os.path.exists(os.path.join(WR, "90_보관/b.pdf")) and not os.path.exists(os.path.join(WR, "20_재무/c.pdf")))
+check("관제탑이 watch 결과를 읽음", ct.read_watch(WS) is not None and len(ct.read_watch(WS)["gone"]) == 1)
 
 # 6. optional: cloud-only detection on a real sync folder, lstat only (nothing is opened)
 if a.cloud_dir:

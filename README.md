@@ -18,7 +18,7 @@ references/log-format.md 로그(moves_v2.csv) 스키마와 검증 루틴
 references/docsets.md    정리가 끝난 뒤: 거래 폴더 · 필수 서류 체크기 · 제출 zip · 관제탑
 references/ontology.md   그 다음: 관계를 그래프로 다루는 최소 온톨로지
 scripts/                 inventory · find_dupes · apply_moves · copy_tree · evict_icloud(macOS)
-                         check_docsets · extract_zip_only · control_tower(관제탑)
+                         check_docsets · extract_zip_only · control_tower(관제탑) · watch(지속 관리)
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
 ```
 
@@ -38,7 +38,7 @@ Codex는 `~/.codex/skills/file-org`에 같은 내용을 둡니다. 스크립트�
 python3 tests/smoke_test.py
 ```
 
-임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 39개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
+임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 46개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
 
 ## 사용
 
@@ -61,6 +61,7 @@ python3 scripts/copy_tree.py SRC DST [--exclude node_modules .venv]
 python3 scripts/check_docsets.py --root <증빙 폴더> --rules references/docset_rules.example.json --out <보고서 폴더>
 python3 scripts/extract_zip_only.py --root <증빙 폴더> --log <moves_v2.csv>        # 제출 zip 안에만 있는 서류(dry-run)
 python3 scripts/control_tower.py --root <마스터> --checks <보고서 폴더>           # http://localhost:8765
+python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/Downloads   # 지속 관리(매일)
 ```
 
 관제탑은 이 컴퓨터에서만 열리는 보기 전용 화면입니다. 폴더 지도(용량 비례), 사업별 완결·누락, 채워야 할 서류, 최근 기록을 보여 주고, 새로고침 버튼은 폴더를 이름·크기로만 다시 셉니다(본문을 읽지 않아 클라우드 파일을 내려받지 않음). 자세한 절차는 `references/docsets.md`.

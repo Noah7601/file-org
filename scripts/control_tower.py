@@ -71,6 +71,12 @@ def read_checks(d):
         progs.append({"title": re.sub(r"\s*\(읽기 전용\)\s*$", "", title), "folders": folders, "todo": todo, "updated": time.strftime("%Y-%m-%d %H:%M", time.localtime(os.path.getmtime(os.path.join(d, f))))})
     return progs
 
+def read_watch(d):
+    p = os.path.join(d, "watch_latest.json") if d else None
+    if not p or not os.path.exists(p): return None
+    try: return json.load(open(p, encoding="utf-8"))
+    except (OSError, ValueError): return None
+
 class Tower:
     def __init__(self, a):
         self.a = a; self.root = os.path.abspath(a.root); self.lock = threading.Lock(); self.state = None; self.busy = False
@@ -85,7 +91,7 @@ class Tower:
             inbox = next((c for c in tree["children"] if c["name"].startswith("00_INBOX")), None)
             self.state = {"root": nfc(self.root), "tree": tree, "inbox": inbox["files"] if inbox else 0, "zeros": zero_list(self.root) if tree["zero"] else [],
                           "log": read_log(self.a.log), "checks": read_checks(self.a.checks), "free_gib": round(free_gib(os.path.expanduser("~")), 1),   # 클라우드 마운트는 서버 용량을 보고하므로 로컬 디스크를 잰다
-                          "scanned_at": time.strftime("%Y-%m-%d %H:%M:%S"), "seconds": round(time.time() - t0, 1), "note": note, "graph_url": self.a.graph_url or ""}
+                          "watch": read_watch(self.a.watch), "scanned_at": time.strftime("%Y-%m-%d %H:%M:%S"), "seconds": round(time.time() - t0, 1), "note": note, "graph_url": self.a.graph_url or ""}
             return {"ok": True}
         except Exception as e: return {"ok": False, "error": str(e)}
         finally: self.busy = False; self.lock.release()
@@ -189,6 +195,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td{padding:5px 6px;bord
   <section class="board"><h2>사업 보드</h2><div id="board"><p class="muted">체크기 보고서가 없습니다.</p></div></section>
   <section><h2>채워야 할 서류</h2><div id="todo"><p class="muted">없음</p></div></section>
   <section><h2>주의할 것</h2><div id="warn"></div></section>
+  <section class="wide"><h2>최근 변화 <span class="muted" id="wAt"></span></h2><div id="watch"><p class="muted">지속 관리(watch.py)를 켜면 어제와 달라진 점이 여기에 나옵니다.</p></div></section>
   <section class="wide"><h2>최근 기록</h2><div id="log"><p class="muted">로그가 없습니다.</p></div></section>
 </main>
 <script>
@@ -221,7 +228,7 @@ function render(){if(!S)return;const t=S.tree;
   const age=(Date.now()-new Date(S.scanned_at.replace(" ","T")).getTime())/3600000;
   if(S.note)alertBar(S.note);else if(age>24)alertBar("마지막 갱신이 하루 넘게 지났습니다. 새로고침을 눌러 주세요.");else $("stale").hidden=true;
   if(S.graph_url){$("graph").hidden=false;$("graph").href=S.graph_url}
-  drawMap();drawBoard();drawTodo();drawWarn();drawLog()}
+  drawMap();drawBoard();drawTodo();drawWarn();drawWatch();drawLog()}
 function drawMap(){const n=cur(),m=$("map");m.innerHTML="";
   const cr=$("crumbs");cr.innerHTML="";const parts=[S.tree.name,...path];
   parts.forEach((p,i)=>{const a=document.createElement("a");a.textContent=p;a.onclick=()=>{path=path.slice(0,i);drawMap()};cr.append(a);if(i<parts.length-1)cr.append(" › ")});
@@ -243,11 +250,18 @@ function drawTodo(){const t=$("todo");const rows=S.checks.flatMap(p=>p.todo.filt
   const by={};rows.forEach(r=>(by[r.folder]=by[r.folder]||[]).push(r));
   t.innerHTML=Object.entries(by).map(([f,rs])=>`<div class="muted" style="margin-top:6px">${esc(f.replace(/_/g," "))}</div><ul>${rs.map(r=>`<li>${esc(r.item)}</li>`).join("")}</ul>`).join("")}
 function drawWarn(){const w=$("warn");const items=[];
+  if(S.watch&&S.watch.gone&&S.watch.gone.length)items.push(`<li><b>사라진 파일 ${S.watch.gone.length}개</b>: 아래 최근 변화를 확인하세요</li>`);
   if(S.zeros.length)items.push(`<li>0바이트 파일 ${S.zeros.length}개: ${S.zeros.slice(0,5).map(esc).join(", ")}</li>`);
   if(S.inbox)items.push(`<li>INBOX에 분류 대기 ${fmtN(S.inbox)}개</li>`);
   if(S.free_gib<8)items.push(`<li>디스크 여유가 ${S.free_gib} GiB로 기준(8 GiB)보다 적습니다</li>`);
   const chk=S.checks.flatMap(p=>p.todo.filter(x=>x.status!=="없음"&&x.status!=="부족"));if(chk.length)items.push(`<li>확인 필요 ${chk.length}건 (원본만 있거나 사람이 봐야 하는 것)</li>`);
   w.innerHTML=items.length?`<ul>${items.join("")}</ul>`:'<p class="muted">없음</p>'}
+function drawWatch(){const W=S.watch,el=$("watch");if(!W)return;$("wAt").textContent="· "+W.at+(W.since?" (기준 "+W.since.slice(0,8)+")":"");
+  if(W.baseline){el.innerHTML='<p class="muted">첫 사진을 찍었습니다. 다음 점검부터 비교합니다.</p>';return}
+  const rows=[["gone","사라짐","bad"],["new_zero","새 0바이트","bad"],["scattered","흩어짐(마스터 밖 새 문서)","warn"],["dup_candidates","새 중복 후보","warn"],["new","새 파일",""],["moved","이동",""]];
+  const chips=rows.map(([k,l,c])=>`<span class="chip ${W[k].length&&c?(c==="bad"?"miss":"miss"):"ok"}">${l} ${W[k].length}</span>`).join("");
+  const show=(k,l)=>W[k].length?`<div class="muted" style="margin-top:8px">${l}</div><ul>${W[k].slice(0,8).map(x=>`<li>${esc(typeof x==="string"?x:(x.path||x.from+" → "+x.to))}</li>`).join("")}${W[k].length>8?`<li class="muted">… 외 ${W[k].length-8}</li>`:""}</ul>`:"";
+  el.innerHTML=`<div class="chips">${chips}</div>`+show("gone","사라진 파일 (휴지통 30일 안에 되살릴 수 있음)")+show("new_zero","새로 0바이트가 된 파일")+show("scattered","마스터 밖에 새로 생긴 문서")}
 function drawLog(){const l=$("log");if(!S.log.length)return;
   l.innerHTML=`<table>${S.log.map(r=>`<tr><td style="white-space:nowrap">${esc(r.time.replace("T"," "))}</td><td><span class="act">${esc(r.action)}</span></td><td>${esc((r.dst||r.src).split("/").slice(-2).join("/"))}</td><td class="muted">${esc(r.reason.slice(0,80))}</td></tr>`).join("")}</table>`}
 $("refresh").onclick=refresh;addEventListener("resize",()=>S&&drawMap());load();
@@ -257,6 +271,7 @@ def main():
     ap = argparse.ArgumentParser(description="파일정리 관제탑(보기 전용 로컬 대시보드)")
     ap.add_argument("--root", required=True); ap.add_argument("--log"); ap.add_argument("--checks")
     ap.add_argument("--refresh-cmd", help="새로고침 때 먼저 실행할 읽기 전용 점검 명령"); ap.add_argument("--graph-url")
+    ap.add_argument("--watch", help="watch.py 상태 폴더(watch_latest.json)")
     ap.add_argument("--port", type=int, default=8765); ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
     if not a.log:

@@ -125,7 +125,7 @@ a{color:var(--accent)}
 <p>Python 3.8 이상이면 macOS·Windows·Linux에서 같은 명령으로 돕니다. 표준 라이브러리만 씁니다.</p>
 <pre><code>git clone https://github.com/Noah7601/file-org ~/.claude/skills/file-org
 python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
-<p>두 번째 줄은 자체 검사입니다. 임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 39개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안)을 확인합니다. 새 컴퓨터에서는 먼저 이것을 돌립니다. Windows는 <code>py -3</code>로 실행합니다.</p>
+<p>두 번째 줄은 자체 검사입니다. 임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 46개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 확인합니다. 새 컴퓨터에서는 먼저 이것을 돌립니다. Windows는 <code>py -3</code>로 실행합니다.</p>
 <p>Codex를 쓰면 같은 내용을 <code>~/.codex/skills/file-org</code>에 둡니다. AI 도우미에게 "파일 정리해줘", "Drive·OneDrive·iCloud 합쳐줘", "중복 파일 찾아줘"처럼 말하면 이 설명서가 적용됩니다.</p>
 
 <h3>처음 정하는 세 가지</h3>
@@ -232,6 +232,7 @@ _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
   <tbody>
     <tr><td><code>check_docsets.py --root DIR --rules JSON</code></td><td>거래 하나 = 하위폴더 하나로 묶인 증빙을, 제출처 지침에서 옮긴 필수 서류 목록(규칙 JSON)으로 검사. 상태는 있음 · zip 안에만 · 다른 폴더 · 부족 · 없음.</td><td>읽기 전용, 보고서만</td></tr>
     <tr><td><code>extract_zip_only.py --root DIR --log LOG</code></td><td>제출 zip 안에만 있고 낱개가 없는 서류를 같은 폴더에 꺼내 둠. zip은 그대로.</td><td>dry-run → 복사</td></tr>
+    <tr><td><code>watch.py --root 마스터 --state 상태폴더</code></td><td>지속 관리. 매일 이름·크기로 사진을 찍어 직전과 비교: 사라짐·새 0바이트는 그날 알리고, 새 파일·중복 후보·다운로드에 흩어진 문서는 주 1회 정리 제안으로 묶음.</td><td>읽기 전용</td></tr>
     <tr><td><code>control_tower.py --root 마스터 --checks 보고서폴더</code></td><td>관제탑. 폴더 지도(용량 비례 타일, 눌러서 내려가기, Finder에서 열기), 사업별 완결·누락, 채울 서류, 최근 기록. 새로고침 버튼은 이름·크기로만 다시 셈.</td><td>보기 전용, 이 컴퓨터에서만</td></tr>
   </tbody>
 </table></div>
