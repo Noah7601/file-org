@@ -94,6 +94,8 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 - 원본 삭제·이동(이관은 복사), 본문 전체 읽기 기반 자동 분류(다운로드 비용), 개발 폴더·설치파일·AI 생성 이미지 이관, 승인 없는 폴더 신설, 사용자에게 보여 주지 않은 규칙의 적용.
 - 클라우드 폴더 안에서 `rsync --delete`, `rm -rf`, 대량 `mv`, Windows의 `del /s`, `robocopy /MIR`, `Remove-Item -Recurse`. 셸 glob으로 한글 경로 다루기.
 
+작업을 시작할 때 사용자의 설정에 삭제·이동 명령 거부 목록이 없으면 넣기를 **제안**한다(직접 바꾸지 않는다). 예시와 샌드박스 안내는 저장소 `README.md`의 "안전하게 쓰기". 거부된 명령을 다른 명령으로 우회하지 않는다. 막혔다면 그 단계는 사용자 몫이다.
+
 ## 6. 참조
 
 - `references/cloud-fs.md` — Google Drive · OneDrive · iCloud Drive의 함정과 대처, macOS·Windows 각각(필독, 클라우드가 끼면)

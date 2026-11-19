@@ -229,7 +229,17 @@ _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
 <details open><summary>삭제는 언제 하나요?</summary><p>도구는 하지 않습니다. 격리 폴더에 모인 중복·스텁·빈 폴더를 사용자가 Finder·탐색기·웹에서 휴지통으로 보냅니다. 삭제 직전에는 보관본이 실제로 존재하는지 sha1로 다시 대조합니다.</p></details>
 <details><summary>마스터를 OneDrive나 iCloud로 둘 수 있나요?</summary><p>됩니다. 스크립트는 경로를 인자로 받을 뿐입니다. 다만 업로드 확인 요령과 0바이트 스텁 규칙은 Google Drive에서 겪은 것이 가장 자세하고, 다른 두 서비스는 아직 그만큼 세부가 없습니다.</p></details>
 <details><summary>중간에 끊기면요?</summary><p>같은 명령을 다시 돌리면 됩니다. 계획 CSV의 상태 열과 로그를 보고 "대기" 행만 처리하고, <code>copy_tree</code>는 크기·수정시각이 같은 파일을 건너뜁니다.</p></details>
-<details><summary>AI 도우미가 스크립트 밖에서 rm을 치면요?</summary><p>설명서는 금지하지만 강제는 아닙니다. Claude Code라면 <code>settings.json</code>의 거부 목록에 <code>Bash(rm:*)</code>, <code>Bash(rsync:*)</code>, <code>Bash(mv:*)</code> 등을 넣어 두는 것을 권합니다. 스크립트 자체에는 삭제 호출이 없습니다(자기 임시 파일 <code>.part</code> 정리뿐).</p></details>
+<details><summary>AI 도우미가 스크립트 밖에서 rm을 치면요?</summary><p>스크립트에는 삭제 호출이 없지만(자기 임시 파일 <code>.part</code> 정리뿐), 도우미가 직접 명령을 칠 수는 있습니다. 설명서는 이를 금지하지만 강제하지는 못하므로 프로그램 쪽에서 두 겹으로 막습니다.</p>
+<p><b>1겹, 삭제·이동 명령 거부.</b> 작업 폴더의 <code>.claude/settings.json</code>(또는 <code>~/.claude/settings.json</code>)에 넣습니다. 스크립트 실행은 그대로 됩니다.</p>
+<pre><code>{
+  "permissions": {
+    "deny": [
+      "Bash(rm:*)", "Bash(rmdir:*)", "Bash(rsync:*)", "Bash(mv:*)", "Bash(unlink:*)",
+      "Bash(find * -delete:*)", "Bash(del:*)", "Bash(robocopy:*)", "Bash(Remove-Item:*)"
+    ]
+  }
+}</code></pre>
+<p><b>2겹, 쓰기 범위 제한.</b> Claude Code의 샌드박스(설정의 <code>sandbox</code> 항목 또는 <code>/sandbox</code>)를 켜면 셸 명령이 작업 폴더 밖에 쓰지 못합니다. 이렇게 두면 삭제가 필요한 단계는 도우미가 목록만 보고하고 사람이 직접 하게 됩니다. 정리가 끝나면 거부 목록을 지워도 됩니다.</p></details>
 <details><summary>Windows에서도 되나요?</summary><p>Windows 11 + Python 3.12에서 자체 검사 28개 항목을 통과했습니다. OneDrive 파일 온디맨드 속성 판정, 260자 경로, 휴지통 보내기까지 확인했습니다. iCloud for Windows는 미검증입니다.</p></details>
 <details><summary>정리가 끝난 뒤에는?</summary><p>폴더 경로는 "이 네 파일이 한 세트"라는 관계를 담지 못합니다. 그래서 거래 하나를 하위폴더 하나로 두고, 지침의 필수 증빙 목록을 코드로 검사하는 체크기를 돌립니다. 결과는 경고 목록으로만 나오고, 고치는 것은 평소의 제안→승인→적용 절차를 탑니다. 세부는 <code>references/ontology.md</code>.</p></details>
 

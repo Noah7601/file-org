@@ -57,13 +57,24 @@ python3 scripts/copy_tree.py SRC DST [--exclude node_modules .venv]
 
 스크립트에는 삭제 호출이 없습니다(자기 임시 파일 `.part` 정리뿐). 이동은 같은 볼륨 안 rename이고 목적지에 파일이 있으면 건너뜁니다. 복사는 `.part`에 쓴 뒤 이름을 바꾸므로 잘린 파일이 남지 않고, 목적지의 다른 파일은 덮어쓰지 않고 충돌로 보고합니다. 모든 쓰기는 `moves_v2.csv`에 남습니다.
 
-남는 위험은 에이전트가 스크립트 밖에서 `rm`·`rsync --delete`·`mv`를 직접 치는 경우입니다. 스킬 문서가 금지하지만 강제는 아니므로, Claude Code라면 `settings.json`의 거부 목록으로 막아 두는 것을 권합니다.
+남는 위험은 에이전트가 스크립트 밖에서 `rm`·`rsync --delete`·`mv`를 직접 치는 경우입니다. 스킬 문서는 금지하지만 강제하지는 못하므로, 프로그램 쪽에서 두 겹으로 막아 두기를 권합니다.
+
+**1겹 — 삭제·이동 명령 거부.** 정리 작업을 하는 폴더의 `.claude/settings.json`(또는 `~/.claude/settings.json`)에 넣습니다. 이 명령들은 에이전트가 실행하려 해도 거부됩니다. 스크립트(`python3 …`)는 그대로 돌아갑니다.
 
 ```json
-{ "permissions": { "deny": ["Bash(rm:*)", "Bash(rsync:*)", "Bash(mv:*)", "Bash(del:*)", "Bash(robocopy:*)", "Bash(Remove-Item:*)"] } }
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm:*)", "Bash(rmdir:*)", "Bash(rsync:*)", "Bash(mv:*)", "Bash(unlink:*)",
+      "Bash(find * -delete:*)", "Bash(del:*)", "Bash(robocopy:*)", "Bash(Remove-Item:*)"
+    ]
+  }
+}
 ```
 
-삭제가 필요한 단계(격리 폴더 비우기, 스텁 제거)는 에이전트가 목록을 보고하고 사용자가 Finder·탐색기·웹에서 직접 합니다.
+**2겹 — 쓰기 범위 제한.** Claude Code의 샌드박스(설정의 `sandbox` 항목, 또는 `/sandbox` 명령)를 켜면 셸 명령이 작업 폴더 밖에 쓰지 못합니다. 작업 폴더를 산출물 폴더로 열면, 마스터·원본 폴더에는 승인된 스크립트만 접근하게 됩니다. 설정 방법은 Claude Code 문서의 sandbox 항목을 따릅니다.
+
+이렇게 두면 삭제가 필요한 단계(격리 폴더 비우기, 스텁 제거)는 자연히 에이전트가 목록을 보고하고 사용자가 Finder·탐색기·웹에서 직접 하게 됩니다. 정리가 끝나면 거부 목록을 지워도 됩니다.
 
 ## 알려진 한계
 
