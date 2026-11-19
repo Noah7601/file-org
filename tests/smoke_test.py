@@ -39,8 +39,8 @@ def last(out, n=-1, w=100):
 for d in ("src", "dst", "_정리로그", "격리", "격리2"):
     if os.path.isdir(os.path.join(WORK, d)): shutil.rmtree(os.path.join(WORK, d))
 A, B, C, D, E, F = (bytes([i]) * 1000 for i in (1, 2, 3, 4, 5, 6))
-put("40_지원사업/2025_지원사업A/기타/보고서.pdf", A)
-put("40_지원사업/2025_지원사업A/집행증빙/견적서.hwp", C)
+put("40_프로젝트/2025_프로젝트A/기타/보고서.pdf", A)
+put("40_프로젝트/2025_프로젝트A/증빙/견적서.hwp", C)
 put("00_INBOX/보고서.pdf", A)                 # same name + content at dest → dedupe quarantine
 put("00_INBOX/견적서.hwp", B)                 # same name, different content → ' (2)'
 put(nfd("00_INBOX/카페.txt"), D)              # NFD on disk; proposal row uses NFC + OS separator
@@ -67,9 +67,9 @@ check("find_dupes dry-run은 파일을 안 옮김", os.path.exists(os.path.join(
 prop = os.path.join(WORK, "proposals.csv")
 with open(prop, "w", newline="", encoding="utf-8-sig") as f:
     w = csv.writer(f); w.writerow(["src", "dest", "why", "approved"])
-    w.writerow(["00_INBOX/보고서.pdf", "40_지원사업/2025_지원사업A/기타", "동일 내용", "✓"])
-    w.writerow(["00_INBOX/견적서.hwp", "40_지원사업/2025_지원사업A/집행증빙", "다른 판", "✓"])
-    w.writerow([os.path.join("00_INBOX", "카페.txt"), "40_지원사업/2025_지원사업A/기타", "NFC + OS 구분자", "✓"])
+    w.writerow(["00_INBOX/보고서.pdf", "40_프로젝트/2025_프로젝트A/기타", "동일 내용", "✓"])
+    w.writerow(["00_INBOX/견적서.hwp", "40_프로젝트/2025_프로젝트A/증빙", "다른 판", "✓"])
+    w.writerow([os.path.join("00_INBOX", "카페.txt"), "40_프로젝트/2025_프로젝트A/기타", "NFC + OS 구분자", "✓"])
     w.writerow(["00_INBOX/하위/깊은 폴더/메모.txt", "20_재무_세무/2025", "슬래시 + 신설", "✓"])
     w.writerow(["00_INBOX/빈파일.txt", "99_Archive/기타", "미승인", ""])
 Q = os.path.join(WORK, "격리")
@@ -79,10 +79,10 @@ check("apply_moves dry-run 대상 4·원본 없음 0", "대상 4 · 원본 없�
 check("apply_moves dry-run은 로그를 안 씀", not os.path.exists(LOG))
 rc, out = run("apply_moves.py", *base, "--apply")
 check("apply_moves --apply rc=0·오류 0", rc == 0 and "오류 0" in out, " | ".join(l for l in out.splitlines() if "·" in l)[:120])
-k = os.path.join(SRC, "40_지원사업", "2025_지원사업A", "기타")
+k = os.path.join(SRC, "40_프로젝트", "2025_프로젝트A", "기타")
 check("동일 내용 → 격리 폴더", os.path.exists(os.path.join(Q, "00_INBOX", "보고서.pdf")) and not os.path.exists(os.path.join(SRC, "00_INBOX", "보고서.pdf")))
-check("다른 판 → ' (2)' 접미", os.path.exists(os.path.join(SRC, "40_지원사업", "2025_지원사업A", "집행증빙", "견적서 (2).hwp")))
-check("원본 덮어쓰기 없음", sha(os.path.join(SRC, "40_지원사업", "2025_지원사업A", "집행증빙", "견적서.hwp")) == hashlib.sha1(C).hexdigest())
+check("다른 판 → ' (2)' 접미", os.path.exists(os.path.join(SRC, "40_프로젝트", "2025_프로젝트A", "증빙", "견적서 (2).hwp")))
+check("원본 덮어쓰기 없음", sha(os.path.join(SRC, "40_프로젝트", "2025_프로젝트A", "증빙", "견적서.hwp")) == hashlib.sha1(C).hexdigest())
 check("NFD 파일을 NFC 행으로 찾아 이동", sum(nfc(n) == "카페.txt" for n in os.listdir(k)) == 1 and not any(nfc(n) == "카페.txt" for n in os.listdir(os.path.join(SRC, "00_INBOX"))))
 check("슬래시 경로 + --mkdir 신설 이동", os.path.exists(os.path.join(SRC, "20_재무_세무", "2025", "메모.txt")))
 check("미승인 행은 그대로", os.path.exists(os.path.join(SRC, "00_INBOX", "빈파일.txt")))

@@ -162,8 +162,8 @@ python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
 </table></div>
 <h3>제안 CSV 예</h3>
 <pre><code>src,dest,why,approved
-00_INBOX/보고서.pdf,40_지원사업/2025_지원사업A/보고,파일명+본문 '지원사업A' 최종보고,✓
-00_INBOX/견적서.hwp,40_지원사업/2025_지원사업A/집행증빙,거래처A 견적,✓
+00_INBOX/보고서.pdf,40_프로젝트/2025_프로젝트A/보고,파일명+본문 '프로젝트A' 최종보고,✓
+00_INBOX/견적서.hwp,40_프로젝트/2025_프로젝트A/증빙,거래처A 견적,✓
 00_INBOX/빈파일.txt,99_Archive/기타,0바이트,</code></pre>
 <p>마지막 행처럼 승인 열이 비어 있으면 실행되지 않습니다. 승인은 채팅으로 받은 말("배치 1·2 전부 승인")을 로그 사유에 그대로 적습니다.</p>
 
@@ -181,13 +181,13 @@ python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
 <p>Windows에서는 경로 260자 제한(<code>LongPathsEnabled</code> 또는 <code>\\?\</code> 접두), 금지 문자(<code>\ / : * ? " &lt; &gt; |</code>), 휴지통 보내기는 PowerShell의 <code>FileSystem.DeleteFile(…, 'SendToRecycleBin')</code>을 씁니다. 세부는 저장소의 <code>references/cloud-fs.md</code>.</p>
 
 <h2 id="naming"><small>7</small>폴더 체계와 이름 규칙</h2>
-<p>마스터는 "주제 번호 + 이름" 1단계, 그 아래 프로젝트(연도_사업명, 거래처, 연도), 그 아래 종류 폴더로 갑니다. 아래는 예시이고, 체계는 사용자가 정합니다.</p>
+<p>마스터는 "주제 번호 + 이름" 1단계, 그 아래 프로젝트(연도_프로젝트명, 거래처, 연도), 그 아래 종류 폴더로 갑니다. 아래는 한 회사의 예시이고, 번호와 이름은 업무에 맞게 정합니다. 프리랜서라면 <code>30_고객/&lt;고객명&gt;/&lt;연도_건명&gt;</code>, 연구실이라면 <code>40_과제/&lt;연도_과제명&gt;</code>, 정부 지원사업이 많다면 <code>40_지원사업/&lt;연도_사업명&gt;/{신청, 보고, 집행증빙}</code>처럼 씁니다. 바꾸지 않는 것은 번호 붙은 1단계, <code>00_INBOX</code>, <code>_정리로그</code> 세 가지입니다.</p>
 <pre><code>00_INBOX_분류대기/&lt;출처&gt;/&lt;원래 폴더&gt;      판정 못 한 것은 원래 구조 그대로
 10_회사_기본/{사업자·법인, 증명서, 인사·노무, 인증·특허}
 20_재무_세무/&lt;연도&gt;
 30_계약_법무/&lt;거래처&gt;
-40_지원사업/&lt;연도_사업명&gt;/{신청, 보고, 집행증빙, 공고·양식, 협약·변경, 기타}
-   └ 집행증빙/&lt;비목&gt;_&lt;거래처&gt;_&lt;YYMM&gt;/        거래 하나 = 하위폴더 하나(문서세트)
+40_프로젝트/&lt;연도_프로젝트명&gt;/{기획, 보고, 증빙, 자료·양식, 계약·변경, 기타}
+   └ 증빙/&lt;비용항목&gt;_&lt;거래처&gt;_&lt;YYMM&gt;/        거래 하나 = 하위폴더 하나(문서세트)
 90_미디어/&lt;활동&gt;/&lt;연&gt;/&lt;연-월&gt;
 99_Archive
 _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
