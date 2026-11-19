@@ -194,6 +194,10 @@ check("watch: 새 0바이트", W["new_zero"] == ["master/30_계약/d.pdf"], str(
 check("watch: 새 파일 위치·중복 후보", {x["where"] for x in W["new"]} == {"마스터 맨 위", "INBOX"} and len(W["dup_candidates"]) == 1, str(W["new"]))
 check("watch는 파일을 안 옮김", os.path.exists(os.path.join(WR, "90_보관/b.pdf")) and not os.path.exists(os.path.join(WR, "20_재무/c.pdf")))
 check("관제탑이 watch 결과를 읽음", ct.read_watch(WS) is not None and len(ct.read_watch(WS)["gone"]) == 1)
+nsnap = len(os.listdir(os.path.join(WS, "snapshots")))
+rc, out = run("watch.py", "--root", WR, "--state", WS, "--against-days", "7")
+WK = json.load(open(os.path.join(WS, "watch_week.json"), encoding="utf-8"))
+check("watch 주간 비교: 가장 오래된 사진 기준, 새 사진 저장 안 함", len(os.listdir(os.path.join(WS, "snapshots"))) == nsnap and len(WK["gone"]) == 1 and len(WK["new"]) == 2, last(out))
 
 # 6. optional: cloud-only detection on a real sync folder, lstat only (nothing is opened)
 if a.cloud_dir:

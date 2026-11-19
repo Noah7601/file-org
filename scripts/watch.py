@@ -42,7 +42,9 @@ def where(key):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--root", required=True); ap.add_argument("--state", required=True)
-    ap.add_argument("--scatter", nargs="*", default=[]); ap.add_argument("--keep", type=int, default=60); a = ap.parse_args()
+    ap.add_argument("--scatter", nargs="*", default=[]); ap.add_argument("--keep", type=int, default=60)
+    ap.add_argument("--against-days", type=int, help="직전 사진 대신 N일 전에 가장 가까운 사진과 비교하고, 새 사진은 저장하지 않는다(주간 정리 제안용). 결과는 watch_week.json")
+    a = ap.parse_args()
     sd = os.path.join(a.state, "snapshots"); rd = os.path.join(a.state, "reports"); os.makedirs(sd, exist_ok=True); os.makedirs(rd, exist_ok=True)
     t0 = time.time(); now = time.strftime("%Y%m%d-%H%M%S")
     cur = snap(a.root, "master")
@@ -53,8 +55,12 @@ def main():
                 if e.name.startswith(".") or not e.is_file(follow_symlinks=False): continue
                 st = e.stat(follow_symlinks=False); cur[f"{os.path.basename(s.rstrip('/'))}/{nfc(e.name)}"] = (st.st_size, int(st.st_mtime))
     prevs = sorted(f for f in os.listdir(sd) if f.endswith(".tsv.gz"))
-    save(cur, os.path.join(sd, f"{now}.tsv.gz"))
-    for old in prevs[:-max(a.keep - 1, 0)] if len(prevs) >= a.keep else []: os.remove(os.path.join(sd, old))   # 오래된 사진만 정리(자기 산출물)
+    if a.against_days:
+        cut = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time() - a.against_days * 86400))
+        older = [f for f in prevs if f[:15] <= cut]; prevs = [older[-1]] if older else prevs[:1]
+    else:
+        save(cur, os.path.join(sd, f"{now}.tsv.gz"))
+        for old in prevs[:-max(a.keep - 1, 0)] if len(prevs) >= a.keep else []: os.remove(os.path.join(sd, old))   # 오래된 사진만 정리(자기 산출물)
     res = {"at": time.strftime("%Y-%m-%d %H:%M:%S"), "files": sum(1 for k in cur if k.startswith("master/")), "baseline": not prevs,
            "since": None, "moved": [], "gone": [], "new_zero": [], "new": [], "dup_candidates": [], "scattered": [], "seconds": 0}
     if prevs:
@@ -79,7 +85,7 @@ def main():
                 if existing.get((os.path.basename(k), s)): res["dup_candidates"].append({"path": k, "same_as": existing[(os.path.basename(k), s)][0]})
             elif os.path.splitext(k)[1].lower() in DOC_EXT: res["scattered"].append({"path": k, "size": s})
     res["seconds"] = round(time.time() - t0, 1)
-    json.dump(res, open(os.path.join(a.state, "watch_latest.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump(res, open(os.path.join(a.state, "watch_week.json" if a.against_days else "watch_latest.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     L = [f"# 지속 관리 보고 {res['at']}\n", f"마스터 파일 {res['files']:,} · 측정 {res['seconds']}초 · 비교 기준 {res['since'] or '(첫 사진)'}\n"]
     if res["baseline"]: L.append("첫 실행이라 기준 사진만 찍었다. 다음 실행부터 비교한다.\n")
     else:
@@ -91,7 +97,7 @@ def main():
         if res["new"]:
             L.append("\n## 새 파일(위치별)\n")
             for w, n in collections.Counter(x["where"] for x in res["new"]).most_common(): L.append(f"- {w}: {n}")
-    open(os.path.join(rd, f"watch_{now}.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")
+    open(os.path.join(rd, f"{'week' if a.against_days else 'watch'}_{now}.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")
     print(f"마스터 {res['files']:,} · " + ("기준 사진" if res["baseline"] else f"사라짐 {len(res['gone'])} · 새0바이트 {len(res['new_zero'])} · 이동 {len(res['moved'])} · 새 {len(res['new'])} · 중복후보 {len(res['dup_candidates'])} · 흩어짐 {len(res['scattered'])}") + f" · {res['seconds']}초")
 
 if __name__ == "__main__":
