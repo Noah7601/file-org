@@ -1,9 +1,9 @@
 ---
-name: file-org
+name: file-pinboard
 description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·분류·이관·정리하는 무손실 방법론과 도구 모음. 사용자가 '파일 정리', '폴더 정리', '다운로드 정리', '중복 파일', '0바이트', 'Drive·OneDrive·iCloud 이관', '백업 합치기', '옛날 파일 어디 있지', '분류해줘', '정리 계획 세워줘'처럼 여러 파일·폴더·저장소를 옮기거나 합치거나 솎아내는 일을 꺼내면 — 정리라는 말을 안 써도, 파일이 수십 개만 넘어도 — 반드시 이 스킬을 먼저 읽는다. 특히 클라우드 동기화 폴더(Google Drive·OneDrive·iCloud Drive)가 끼어 있거나, 삭제·덮어쓰기 위험이 있거나, 결과를 나중에 되돌려야 할 수 있는 작업이면 예외 없이 적용한다. 단일 파일 하나를 옮기거나 이름만 바꾸는 사소한 요청에는 쓰지 않는다."
 ---
 
-# file-org — 무손실 파일 정리
+# 파일 핀보드 (file-pinboard) — 무손실 파일 정리
 
 두 달짜리 실제 정리 프로젝트(로컬 + Google Drive + OneDrive + iCloud, 2만여 건)에서 검증된 절차다. macOS에서 검증했다. Windows 11(Python 3.12, OneDrive·Drive for desktop 실측)에서는 측정·중복·적용·복사·클라우드 판정까지 확인했고, 그 뒤에 더한 체크기·관제탑·감시·디스크 가드는 아직 Windows에서 돌려 보지 않았다. Linux도 같은 절차로 돈다(플랫폼별 차이는 `references/cloud-fs.md`). 핵심은 한 가지: **사용자가 돌이킬 수 없는 일은 하지 않는다.** 그 위에 "측정 → 제안 → dry-run → 승인 → 적용 → 검증 → 기록"을 한 단계씩 돈다.
 
@@ -13,7 +13,7 @@ description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·
 |---|---|---|
 | 마스터 위치 | 사용자가 지정한 한 폴더(클라우드여도 됨) | 검색이 여러 곳으로 갈라지는 게 문제의 본질 |
 | 산출물 폴더 | 마스터 밖의 git 저장소 (예: macOS `~/Documents/파일정리/`, Windows `C:\Users\<이름>\Documents\파일정리\`; 그 폴더가 OneDrive·iCloud 동기화 대상이면 밖으로) | 계획·CSV·로그가 작업 자체에 휩쓸리면 안 됨 |
-| 새로 짜는 스크립트 폴더 | 이번 작업용으로 새로 짜는 일회용 스크립트만 동기화 안 되는 곳에 (예: macOS `~/projects/file-org/`, Windows `C:\projects\file-org\`). 번들 스크립트는 복사하지 않고 설치 위치(`<스킬>/scripts/`)에서 그대로 실행 | iCloud·Drive가 `.py`·`node_modules`까지 올리면 느려지고 꼬임 |
+| 새로 짜는 스크립트 폴더 | 이번 작업용으로 새로 짜는 일회용 스크립트만 동기화 안 되는 곳에 (예: macOS `~/projects/file-pinboard/`, Windows `C:\projects\file-pinboard\`). 번들 스크립트는 복사하지 않고 설치 위치(`<스킬>/scripts/`)에서 그대로 실행 | iCloud·Drive가 `.py`·`node_modules`까지 올리면 느려지고 꼬임 |
 | 로그 | 마스터 안 `_정리로그/moves_v2.csv` 한 파일 | 형식은 `references/log-format.md` |
 | 디스크 여유 | 작업 전 측정, 가드 8 GiB(`copy_tree`·`find_dupes`에 내장, `--min-free`로 조정) | 클라우드 이관은 "내려받아 올리는" 구조라 로컬 사본이 쌓인다. 마스터가 클라우드여도 재는 곳은 이 컴퓨터의 로컬 디스크(클라우드 폴더는 서버 용량을 보고한다) |
 
@@ -21,7 +21,7 @@ description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·
 
 처음 쓰는 사람은 명령어를 모른다고 가정하고, 아래를 대신 한다. 설명은 짧고 평이하게.
 
-- **"이 스킬 설치해줘"**: 자신이 Claude Code면 `~/.claude/skills/file-org`, Codex면 `~/.codex/skills/file-org`에 `git clone` → `tests/smoke_test.py` 실행 → `PASS n / FAIL 0`을 한 줄로 보고. macOS에서 `git`·`python3`이 "개발자 도구 설치"를 요구하면 사용자에게 창에서 설치를 누르라고 안내하고 기다린다. Windows는 `py -3`.
+- **"이 스킬 설치해줘"**: 자신이 Claude Code면 `~/.claude/skills/file-pinboard`, Codex면 `~/.codex/skills/file-pinboard`에 `git clone` → `tests/smoke_test.py` 실행 → `PASS n / FAIL 0`을 한 줄로 보고. macOS에서 `git`·`python3`이 "개발자 도구 설치"를 요구하면 사용자에게 창에서 설치를 누르라고 안내하고 기다린다. Windows는 `py -3`.
 - **마스터 경로 찾기**: 사용자는 클라우드 폴더의 실제 경로를 모른다. macOS `~/Library/CloudStorage/`(Google Drive·OneDrive), iCloud `~/Library/Mobile Documents/com~apple~CloudDocs/`, Windows `G:\내 드라이브`·`%USERPROFILE%\OneDrive`를 읽기만 해서 후보를 보여 주고 고르게 한다.
 - **"안전 설정도 해줘"(Claude Code)**: README 「권장 설정」의 JSON을 실제 경로(마스터, 원본 저장소)로 채워 **먼저 보여 주고**, 승인받은 뒤 산출물 폴더의 `.claude/settings.json`에 쓴다. 사용자 전역 설정(`~/.claude/settings.json`)은 따로 묻지 않고는 건드리지 않는다. 기존 설정 파일이 있으면 덮어쓰지 않고 합친 결과를 보여 준다. 적용 뒤에는 산출물 폴더에서 새 세션을 열어야 반영된다고 알린다. Codex면 `~/.codex/config.toml`에 넣을 줄을 보여 주고 사용자가 넣게 한다.
 - **산출물 폴더 준비**: 산출물 폴더를 만들고 `git init`. 커밋할 때 이름이 없다고 막히면 `git config user.name`·`user.email`을 그 폴더에만(`--global` 없이) 사용자가 정한 값으로 넣는다.

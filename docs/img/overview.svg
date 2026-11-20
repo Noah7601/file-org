@@ -3,7 +3,7 @@
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#59636e"/></marker>
   </defs>
   <rect width="960" height="640" rx="16" fill="#ffffff"/>
-  <text x="30" y="44" font-size="22" font-weight="700" fill="#1f2328">file-org 한눈에 보기</text>
+  <text x="30" y="44" font-size="22" font-weight="700" fill="#1f2328">파일 핀보드 한눈에 보기</text>
   <text x="30" y="68" font-size="13.5" fill="#59636e">흩어진 파일을 한 곳에 모으고, 모든 작업은 사람이 승인한 뒤에만 실행하고, 정리한 상태를 계속 지킨다.</text>
 
   <!-- ① 모으기 -->

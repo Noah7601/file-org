@@ -1,4 +1,4 @@
-"""Shared helpers for file-org scripts. Standard library only; runs on macOS, Windows and Linux (Python 3.8+).
+"""Shared helpers for file-pinboard scripts. Standard library only; runs on macOS, Windows and Linux (Python 3.8+).
 
 Rules baked in: NFC comparison, no shell globbing, never overwrite (copies land via .part + rename), retries for
 cloud-only files (OneDrive Errno 60, iCloud dataless, Windows Files On-Demand), size verification."""

@@ -12,7 +12,7 @@
 
 명령어를 몰라도 됩니다. Claude Code나 Codex 같은 AI 도우미에게 차례로 말하세요.
 
-1. **"https://github.com/Noah7601/file-org 스킬 설치해줘"** — 설치하고 자체 검사까지 돌려 결과를 알려 줍니다.
+1. **"https://github.com/Noah7601/file-pinboard 스킬 설치해줘"** — 설치하고 자체 검사까지 돌려 결과를 알려 줍니다.
 2. **"안전 설정도 해줘"** (선택, Claude Code) — 삭제 명령 거부, 쓰기 범위 제한, 디스크 가드를 실제 경로로 채워 보여 주고, 승인하면 넣습니다.
 3. **"파일 정리해줘"** — 아래처럼 진행됩니다.
 
@@ -40,15 +40,15 @@ AI는 언제나 **보여 주고 → 승인받고 → 실행하고 → 다시 세
 
 ```bash
 # Claude Code
-git clone https://github.com/Noah7601/file-org ~/.claude/skills/file-org
-python3 ~/.claude/skills/file-org/tests/smoke_test.py
+git clone https://github.com/Noah7601/file-pinboard ~/.claude/skills/file-pinboard
+python3 ~/.claude/skills/file-pinboard/tests/smoke_test.py
 # Codex
-git clone https://github.com/Noah7601/file-org ~/.codex/skills/file-org
-python3 ~/.codex/skills/file-org/tests/smoke_test.py
+git clone https://github.com/Noah7601/file-pinboard ~/.codex/skills/file-pinboard
+python3 ~/.codex/skills/file-pinboard/tests/smoke_test.py
 ```
 
 - 새 맥에서 `git`이나 `python3`을 처음 치면 "개발자 도구 설치" 창이 뜹니다. 설치(몇 분)한 뒤 다시 실행하세요.
-- Windows는 `python3` 대신 `py -3`, 경로는 `%USERPROFILE%\.claude\skills\file-org`입니다.
+- Windows는 `python3` 대신 `py -3`, 경로는 `%USERPROFILE%\.claude\skills\file-pinboard`입니다.
 - 마지막 줄에 `결과: PASS … / FAIL 0`이 나오면 준비 끝입니다.
 
 </details>
@@ -69,7 +69,7 @@ python3 ~/.codex/skills/file-org/tests/smoke_test.py
 
 ## 한눈에 보기
 
-![file-org 한눈에 보기: 모으기, 한 바퀴, 정리 뒤 유지](docs/img/overview.svg)
+![파일 핀보드 한눈에 보기: 모으기, 한 바퀴, 정리 뒤 유지](docs/img/overview.svg)
 
 ### 온톨로지 — 정리가 끝난 뒤
 
@@ -99,10 +99,10 @@ docs/img/                15초 요약 GIF · 한눈에 보기 · 작동 원리 �
 Claude Code:
 
 ```bash
-git clone https://github.com/Noah7601/file-org ~/.claude/skills/file-org
+git clone https://github.com/Noah7601/file-pinboard ~/.claude/skills/file-pinboard
 ```
 
-Codex는 `~/.codex/skills/file-org`에 같은 내용을 둡니다. 스크립트는 Python 3.8+ 표준 라이브러리만 씁니다(Windows는 `py -3`). iCloud 로컬 사본 축출 도구만 macOS 전용이며 `swiftc -O scripts/evict_icloud.swift -o scripts/evict_icloud`로 빌드합니다.
+Codex는 `~/.codex/skills/file-pinboard`에 같은 내용을 둡니다. 스크립트는 Python 3.8+ 표준 라이브러리만 씁니다(Windows는 `py -3`). iCloud 로컬 사본 축출 도구만 macOS 전용이며 `swiftc -O scripts/evict_icloud.swift -o scripts/evict_icloud`로 빌드합니다.
 
 ## 먼저 할 것
 
@@ -179,7 +179,7 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
   },
   "hooks": {
     "PreToolUse": [
-      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-org/hooks/disk_guard_hook.py"}]}
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-pinboard/hooks/disk_guard_hook.py"}]}
     ]
   }
 }
@@ -220,7 +220,7 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 {
   "hooks": {
     "PreToolUse": [
-      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-org/hooks/disk_guard_hook.py"}]}
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-pinboard/hooks/disk_guard_hook.py"}]}
     ]
   }
 }
@@ -230,7 +230,7 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 
 ### Codex(GPT)에서 쓸 때
 
-스크립트와 SKILL.md는 모델과 관계없이 같습니다(`~/.codex/skills/file-org`에 두면 Codex가 읽습니다). 다른 것은 안전장치를 거는 곳입니다. 위의 거부 목록·훅은 Claude Code 설정이라 Codex에는 적용되지 않습니다.
+스크립트와 SKILL.md는 모델과 관계없이 같습니다(`~/.codex/skills/file-pinboard`에 두면 Codex가 읽습니다). 다른 것은 안전장치를 거는 곳입니다. 위의 거부 목록·훅은 Claude Code 설정이라 Codex에는 적용되지 않습니다.
 
 - `~/.codex/config.toml`에서 명령 승인을 켜고(`approval_policy = "on-request"` 또는 `"untrusted"`), 쓰기를 작업 폴더로 제한합니다(`sandbox_mode = "workspace-write"`). 작업 폴더는 산출물 폴더로 엽니다. 키 이름은 이 글을 쓸 때 기준이니 Codex 문서에서 최신 이름을 확인하세요.
 - 디스크 가드는 스크립트 안에 있으므로 Codex에서도 그대로 동작합니다.
