@@ -6,7 +6,7 @@
 
 | ① 모으기 | ② 승인 | ③ 검사 | ④ 지키기 |
 |---|---|---|---|
-| 다운로드 · Google Drive · OneDrive · iCloud에 흩어진 파일을 마스터 폴더 한 곳으로. 원본은 보존 | 옮길 목록을 먼저 보여 주고, 사람이 ✓한 줄만 실행. 삭제 0 · 덮어쓰기 0 · 모두 기록 | 거래 폴더마다 필수 서류가 다 있는지 코드가 검사해 빠진 것을 알려 줌 | 디스크가 차면 멈췄다가 비우면 이어서. 예약 작업을 걸면 매일 변화를 감시(자동 실행은 따로 설정, 「사용」 참고) |
+| 다운로드 · Google Drive · OneDrive · iCloud에 흩어진 파일을 마스터 폴더 한 곳으로. 클라우드 원본은 복사해 보존, 다운로드·바탕화면은 옮김 | 옮길 목록을 먼저 보여 주고, 사람이 ✓한 줄만 실행. 삭제 0 · 덮어쓰기 0 · 모두 기록 | 거래 폴더마다 필수 서류가 다 있는지 코드가 검사해 빠진 것을 알려 줌 | 디스크가 차면 멈췄다가 비우면 이어서. 예약 작업을 걸면 매일 변화를 감시(자동 실행은 따로 설정, 「사용」 참고) |
 
 ## 시작하기 — AI 도우미에게 말로
 
@@ -86,7 +86,7 @@ references/classify.md   분류: 근거 추출 → 신뢰도 → 배치 승인 �
 references/log-format.md 로그(moves_v2.csv) 스키마와 검증 루틴
 references/docsets.md    정리가 끝난 뒤: 거래 폴더 · 필수 서류 체크기 · 제출 zip · 관제탑
 references/ontology.md   그 다음: 관계를 그래프로 다루는 최소 온톨로지
-scripts/                 inventory · find_dupes · apply_moves · copy_tree · evict_icloud(macOS)
+scripts/                 inventory · find_dupes · apply_moves · verify_log · copy_tree · evict_icloud(macOS)
                          check_docsets · extract_zip_only · control_tower(관제탑) · watch(지속 관리)
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
 hooks/                   선택: Claude Code 디스크 가드 훅
@@ -110,7 +110,7 @@ Codex는 `~/.codex/skills/file-org`에 같은 내용을 둡니다. 스크립트�
 python3 tests/smoke_test.py
 ```
 
-임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 53개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 디스크 가드, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
+임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 61개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 디스크 가드, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
 
 ## 사용
 
@@ -120,8 +120,10 @@ python3 tests/smoke_test.py
 
 ```bash
 python3 scripts/inventory.py <폴더>                                   # 측정(읽기 전용)
-python3 scripts/find_dupes.py <폴더> [--quarantine DIR --log LOG --apply]
-python3 scripts/apply_moves.py --root R --proposals CSV --log LOG [--apply --dedupe --quarantine DIR --mkdir]
+python3 scripts/find_dupes.py <폴더> [--quarantine DIR --log LOG --apply --tag "승인 문구"]
+python3 scripts/apply_moves.py --root R --proposals CSV --log LOG --preview           # 승인 전: 전체 계획 보기
+python3 scripts/apply_moves.py --root R --proposals CSV --log LOG --apply --tag "승인 문구" [--dedupe --quarantine DIR --mkdir]
+python3 scripts/verify_log.py --log LOG                                                 # 다시 세어 보기
 python3 scripts/copy_tree.py SRC DST [--exclude node_modules .venv] [--min-free 8]
 ```
 
@@ -171,7 +173,7 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
   "sandbox": {
     "enabled": true,
     "filesystem": {
-      "allowWrite": ["<마스터 경로>"],
+      "allowWrite": ["<마스터 경로>", "<옮겨 올 로컬 폴더: 다운로드·바탕화면>"],
       "denyWrite": ["<원본 OneDrive 경로>", "<원본 iCloud 경로>"]
     }
   },
@@ -183,7 +185,8 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 }
 ```
 
-- **쓰기 허용**은 작업 폴더(산출물, 기본으로 허용됨)와 마스터뿐입니다. 원본 저장소는 읽기만 됩니다(읽기는 기본 허용, 쓰기는 `denyWrite`).
+- **쓰기 허용**은 작업 폴더(산출물, 기본으로 허용됨)와 마스터, 그리고 파일을 **옮겨 올** 로컬 폴더(다운로드·바탕화면)뿐입니다. 옮기면 원래 자리에서 빠지므로 그 폴더도 쓰기가 필요합니다. 복사만 하는 클라우드 원본은 `denyWrite`로 막습니다.
+- **훅 경로**는 설치 위치에 맞춥니다(Codex 설치면 `~/.codex/skills/…`, Windows면 `%USERPROFILE%\.claude\skills\…`). "안전 설정도 해줘"라고 하면 AI가 실제 경로로 채워 보여 줍니다.
 - **인터넷 주소 허용 목록은 비워 둡니다.** 이 스킬은 네트워크가 필요 없습니다. 비워 두면 파일이 밖으로 나가는 길도 막힙니다.
 - **`Edit(//…)` 규칙**은 Claude의 파일 편집 도구용입니다. 편집 도구는 샌드박스 밖에서 돌아 권한 규칙만 따르기 때문입니다. 권한 규칙의 절대 경로는 `//`로 시작하고, 샌드박스 경로는 `/`나 `~/`로 씁니다.
 - 키 이름은 Claude Code 문서(sandboxing, settings)의 2026-11 기준입니다. 정리가 끝나면 이 설정을 지워도 됩니다.

@@ -39,7 +39,7 @@ def walk_files(root, exclude=EXCLUDE_DIRS, skip_names=SKIP_NAMES):
     Symlinks are yielded (lstat) but never followed."""
     root = os.path.abspath(root)
     for dp, dn, fn in os.walk(root):
-        dn[:] = [d for d in dn if d not in exclude]
+        dn[:] = [d for d in dn if d not in exclude and nfc(d) not in exclude]
         for f in fn:
             if f in skip_names:
                 continue

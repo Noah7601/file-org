@@ -8,7 +8,7 @@ from fileorg_lib import walk_files, is_dataless, nfc, EXCLUDE_DIRS, local_free_g
 ap = argparse.ArgumentParser()
 ap.add_argument("root")
 ap.add_argument("--out", help="write per-file CSV here")
-ap.add_argument("--exclude", nargs="*", default=sorted(EXCLUDE_DIRS), help="dir names to prune")
+ap.add_argument("--exclude", nargs="*", default=sorted(EXCLUDE_DIRS | {"_정리로그"}), help="dir names to prune (the _정리로그 log folder is skipped by default)")
 ap.add_argument("--top", type=int, default=12)
 a = ap.parse_args()
 

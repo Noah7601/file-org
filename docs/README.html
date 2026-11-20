@@ -255,7 +255,8 @@ python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
   <tbody>
     <tr><td><code>inventory.py &lt;폴더&gt; [--out csv]</code></td><td>측정. 파일 수·용량·0바이트·클라우드 전용·확장자 분포. 파일별 CSV 선택.</td><td>읽기 전용</td></tr>
     <tr><td><code>find_dupes.py &lt;폴더&gt; [--quarantine DIR --log LOG --apply]</code></td><td>내용이 같은 중복 찾기. 크기가 같은 것끼리만 sha1 비교. 접미 없는 쪽을 보관본으로.</td><td>dry-run → 격리 이동</td></tr>
-    <tr><td><code>apply_moves.py --root R --proposals CSV --log LOG [--apply --dedupe --quarantine DIR --mkdir]</code></td><td>승인된 제안 CSV(열: src, dest, why, approved) 적용. ✓가 있는 행만. 동명 충돌은 건너뛰고, <code>--dedupe</code>면 같은 내용은 격리·다른 내용은 <code> (2)</code>.</td><td>dry-run → rename, 사후 검증, 로그</td></tr>
+    <tr><td><code>apply_moves.py --root R --proposals CSV --log LOG [--preview | --apply --tag "승인 문구"] [--dedupe --quarantine DIR --mkdir]</code></td><td>승인된 제안 CSV(열: src, dest, why, approved) 적용. ✓가 있는 행만. <code>--root</code>는 src·dest의 기준 폴더(보통 마스터)이고 목적지는 그 밖으로 못 나갑니다. 승인 전에는 <code>--preview</code>로 전체 계획을 보여 주고, "전부 승인"이면 approved 열을 모두 ✓로 채웁니다. 동명 충돌은 건너뛰고, <code>--dedupe</code>면 같은 내용은 격리·다른 내용은 <code> (2)</code>.</td><td>미리보기 → rename, 사후 검증, 로그</td></tr>
+    <tr><td><code>verify_log.py --log LOG</code></td><td>다시 세어 보기. 로그에 적힌 이동·복사가 실제 파일과 맞는지 따로 확인합니다.</td><td>읽기 전용</td></tr>
     <tr><td><code>copy_tree.py SRC DST [--exclude …] [--workers 8] [--retry …]</code></td><td>클라우드 전용 원본도 견디는 파일 단위 복사. 읽은 즉시 쓰기, 재시도, 크기 검증, 재개 가능. 목적지의 다른 파일은 덮어쓰지 않고 "충돌"로 보고. <b>디스크 가드</b>: 시작 전 복사할 양과 여유를 비교해 모자라면 시작하지 않고, 진행 중 여유가 8 GiB(<code>--min-free</code>) 아래로 내려가면 멈춤. 공간을 비운 뒤 같은 명령으로 이어서.</td><td>복사만, 삭제·덮어쓰기 없음</td></tr>
     <tr><td><code>evict_icloud &lt;경로&gt;…</code></td><td>iCloud 로컬 사본만 비우고 클라우드 원본은 그대로. macOS 전용, <code>swiftc -O scripts/evict_icloud.swift -o scripts/evict_icloud</code>로 빌드.</td><td>로컬 공간 회수</td></tr>
   </tbody>

@@ -37,7 +37,7 @@ def sha(p):
 def last(out, n=-1, w=100):
     ls = [l for l in out.splitlines() if l.strip()]; return ls[n][:w] if ls else ""
 
-for d in ("src", "dst", "_정리로그", "격리", "격리2"):
+for d in ("src", "dst", "_정리로그", "격리", "격리2", "inv_log_test"):
     if os.path.isdir(os.path.join(WORK, d)): shutil.rmtree(os.path.join(WORK, d))
 A, B, C, D, E, F = (bytes([i]) * 1000 for i in (1, 2, 3, 4, 5, 6))
 put("40_프로젝트/2025_프로젝트A/기타/보고서.pdf", A)
@@ -78,6 +78,16 @@ base = ["--root", SRC, "--proposals", prop, "--log", LOG, "--dedupe", "--quarant
 rc, out = run("apply_moves.py", *base)
 check("apply_moves dry-run 대상 4·원본 없음 0", "대상 4 · 원본 없음 0" in out, last(out, 0))
 check("apply_moves dry-run은 로그를 안 씀", not os.path.exists(LOG))
+check("apply_moves dry-run: 미승인 줄 수와 기준 폴더를 알려 줌, 새 최상위 폴더 경고", "미승인 1" in out and "기준 폴더(--root)" in out and "새 최상위 폴더 '20_재무_세무'" in out)
+rc, out = run("apply_moves.py", *base, "--preview")
+check("apply_moves --preview: 승인 전 전체 계획(5줄)을 보여 주고 아무것도 안 씀", "대상 5" in out and "미리보기" in out and not os.path.exists(LOG), last(out, 1))
+rc, out = run("apply_moves.py", *base, "--preview", "--apply")
+check("apply_moves --preview는 --apply와 함께 거부", rc != 0 and os.path.exists(os.path.join(SRC, "00_INBOX", "보고서.pdf")))
+prop_out = os.path.join(WORK, "proposals_out.csv")
+with open(prop_out, "w", newline="", encoding="utf-8-sig") as f:
+    w = csv.writer(f); w.writerow(["src", "dest", "why", "approved"]); w.writerow(["00_INBOX/보고서.pdf", "../밖", "기준 밖", "✓"])
+rc, out = run("apply_moves.py", "--root", SRC, "--proposals", prop_out, "--log", LOG, "--apply", "--mkdir")
+check("apply_moves: 기준 폴더 밖 목적지는 건너뜀", "기준 밖 목적지 1" in out and not os.path.exists(os.path.join(WORK, "밖")) and os.path.exists(os.path.join(SRC, "00_INBOX", "보고서.pdf")), last(out, 1))
 rc, out = run("apply_moves.py", *base, "--apply")
 check("apply_moves --apply rc=0·오류 0", rc == 0 and "오류 0" in out, " | ".join(l for l in out.splitlines() if "·" in l)[:120])
 k = os.path.join(SRC, "40_프로젝트", "2025_프로젝트A", "기타")
@@ -93,8 +103,22 @@ check("로그 move 4 · mkdir 1 · error 0", acts == {"move": 4, "mkdir": 1, "er
 
 # 4. find_dupes --apply (keeper = the name without ' (2)')
 Q2 = os.path.join(WORK, "격리2")
-rc, out = run("find_dupes.py", SRC, "--apply", "--quarantine", Q2, "--log", LOG)
+rc, out = run("find_dupes.py", SRC, "--apply", "--quarantine", Q2, "--log", LOG, "--tag", "시험 승인 '전부 승인'")
 check("find_dupes --apply 격리 1/1", "격리 1/1" in out, last(out))
+check("find_dupes --tag: 승인 문구가 로그 사유에 남음", any(r["reason"].startswith("시험 승인 '전부 승인'") for r in csv.DictReader(open(LOG, encoding="utf-8"))))
+rc, out = run("verify_log.py", "--log", LOG)
+check("verify_log: 기록대로 실제 파일이 있는지 다시 세어 봄(불일치 0)", rc == 0 and "불일치 0" in out, last(out, 0))
+badlog = os.path.join(WORK, "bad_log.csv")
+shutil.copy(LOG, badlog)
+with open(badlog, "a", newline="", encoding="utf-8") as f:
+    csv.writer(f).writerow(["2099-01-01T00:00:00", "move", os.path.join(SRC, "없음.txt"), os.path.join(SRC, "없는곳", "없음.txt"), "가짜"])
+rc, out = run("verify_log.py", "--log", badlog)
+check("verify_log: 기록과 다르면 불일치로 잡고 rc=1", rc == 1 and "불일치 1" in out, last(out, 0))
+INV = os.path.join(WORK, "inv_log_test"); os.makedirs(os.path.join(INV, "_정리로그"), exist_ok=True)
+for rel in ("a.txt", os.path.join("_정리로그", "moves_v2.csv")):
+    with open(os.path.join(INV, rel), "w") as f: f.write("x")
+rc, out = run("inventory.py", INV)
+check("inventory: _정리로그(기록 폴더)는 세지 않음", "파일 1 " in out, last(out, 1))
 check("접미 없는 쪽을 보관", os.path.exists(os.path.join(SRC, "90_미디어", "사진.jpg")) and os.path.exists(os.path.join(Q2, "90_미디어", "사진 (2).jpg")))
 
 # 5. copy_tree: copy + verify, then re-run → everything skipped

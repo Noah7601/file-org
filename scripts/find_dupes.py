@@ -16,6 +16,7 @@ ap.add_argument("--log", help="moves_v2.csv path (required with --apply)")
 ap.add_argument("--out", help="write groups CSV")
 ap.add_argument("--exclude", nargs="*", default=sorted(EXCLUDE_DIRS))
 ap.add_argument("--min-size", type=int, default=1)
+ap.add_argument("--tag", default="중복 격리", help="log reason prefix, e.g. the user's approval wording")
 ap.add_argument("--min-free", type=float, default=MIN_FREE_GIB, help="GiB of local free space to keep while hashing (0 = off)")
 a = ap.parse_args()
 root = os.path.abspath(a.root)
@@ -64,7 +65,7 @@ if a.apply:
                 continue
             os.makedirs(os.path.dirname(q), exist_ok=True); os.rename(d, q); time.sleep(0.3)
             if os.path.exists(q) and not os.path.exists(d) and os.path.getsize(q) == size:
-                moved += 1; log_row(a.log, "move", d, q, f"동일 내용 중복 격리(보관본 {nfc(os.path.relpath(keep, root))})")
+                moved += 1; log_row(a.log, "move", d, q, f"{a.tag}: 동일 내용 중복 격리(보관본 {nfc(os.path.relpath(keep, root))})")
             else:
-                log_row(a.log, "error", d, q, "격리 사후 검증 실패")
+                log_row(a.log, "error", d, q, f"{a.tag}: 격리 사후 검증 실패")
     print(f"격리 {moved}/{dups} → {a.quarantine}")
