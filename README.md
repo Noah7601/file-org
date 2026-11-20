@@ -34,7 +34,7 @@ scripts/                 inventory · find_dupes · apply_moves · copy_tree · 
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
 hooks/                   선택: Claude Code 디스크 가드 훅
 docs/README.html         설명서(한 페이지, 그림 포함)
-docs/img/                15초 요약 GIF · 한눈에 보기 · 온톨로지 그림(SVG)
+docs/img/                15초 요약 GIF · 한눈에 보기 · 작동 원리 · 온톨로지 그림(SVG)
 ```
 
 ## 설치
@@ -83,6 +83,54 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 
 관제탑은 이 컴퓨터에서만 열리는 보기 전용 화면입니다. 폴더 지도(용량 비례), 사업별 완결·누락, 채워야 할 서류, 최근 기록을 보여 주고, 새로고침 버튼은 폴더를 이름·크기로만 다시 셉니다(본문을 읽지 않아 클라우드 파일을 내려받지 않음). 자세한 절차는 `references/docsets.md`.
 
+## 작동 원리 — 무엇이 무엇을 막나
+
+![작동 원리: 요청 → AI → 실행 직전 검문(거부 목록·훅) → 샌드박스 → 스크립트 → 파일](docs/img/layers.svg)
+
+명령 하나가 파일에 닿기까지 네 겹을 거칩니다. 바깥 겹(②③④)은 Claude Code 설정이라 쓰는 도구에 따라 다르고, 마지막 ①은 어떤 AI·사람이 돌려도 항상 지킵니다. 각 겹은 막는 것과 못 막는 것이 다르므로 겹쳐 씁니다.
+
+| 겹 | 어디서 동작하나 | 막는 것 | 못 막는 것 | Codex에서는 |
+|---|---|---|---|---|
+| **① 스크립트 안의 규칙** (항상 켜짐) | 파이썬 스크립트 자체 | 승인 안 된 줄 실행, 덮어쓰기, 잘린 파일, 디스크 가득 참(8 GiB 가드), 기록 누락 | AI가 스크립트를 쓰지 않고 직접 명령을 치는 경우 | 그대로 동작 |
+| **② 명령 거부 목록** (Claude Code 설정) | AI가 명령을 실행하기 직전 | AI가 `rm`·`mv`·`rsync`·`del`을 직접 치는 것 | `python -c "os.remove(...)"`처럼 다른 모양으로 돌아가는 삭제 | 승인 모드로 비슷하게 |
+| **③ 훅** (선택, Claude Code) | 명령 실행 직전에 검사 프로그램이 끼어듦 | 디스크 여유가 부족할 때 복사·해시·이동 스크립트 시작 | 이미 돌고 있는 작업 중간(①이 막음), 사람이 직접 돌릴 때 | 없음 → 그래서 가드를 ①에 넣음 |
+| **④ 샌드박스** (Claude Code, 운영체제가 강제) | 셸 명령이 시작된 뒤 운영체제 수준 | 허용한 폴더 밖에 쓰기, 허용 안 된 인터넷 주소로 보내기. ②를 피한 `python -c` 삭제도 허용 폴더 밖이면 막힘 | 허용한 폴더 **안**에서의 실수. 쓰기 허용을 홈 전체로 넓히면 사실상 보호 없음. Claude의 파일 편집 도구(Edit·Write)는 샌드박스 밖이라 권한 규칙으로 따로 막아야 함 | 샌드박스로 비슷하게 |
+
+샌드박스는 macOS(Seatbelt)·Linux·WSL2(bubblewrap)에서 동작하고, Windows 기본 환경에서는 없습니다(WSL2 안에서 실행하면 됩니다).
+
+### 권장 설정 (Claude Code)
+
+정리 작업을 할 때 **산출물 폴더를 작업 폴더로 열고**, 아래를 그 폴더의 `.claude/settings.json`에 넣습니다. `<…>`는 자기 경로로 바꿉니다.
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm:*)", "Bash(rmdir:*)", "Bash(rsync:*)", "Bash(mv:*)", "Bash(unlink:*)",
+      "Bash(find * -delete:*)", "Bash(del:*)", "Bash(robocopy:*)", "Bash(Remove-Item:*)",
+      "Edit(//<원본 OneDrive 절대경로>/**)", "Edit(//<원본 iCloud 절대경로>/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "allowWrite": ["<마스터 경로>"],
+      "denyWrite": ["<원본 OneDrive 경로>", "<원본 iCloud 경로>"]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-org/hooks/disk_guard_hook.py"}]}
+    ]
+  }
+}
+```
+
+- **쓰기 허용**은 작업 폴더(산출물, 기본으로 허용됨)와 마스터뿐입니다. 원본 저장소는 읽기만 됩니다(읽기는 기본 허용, 쓰기는 `denyWrite`).
+- **인터넷 주소 허용 목록은 비워 둡니다.** 이 스킬은 네트워크가 필요 없습니다. 비워 두면 파일이 밖으로 나가는 길도 막힙니다.
+- **`Edit(//…)` 규칙**은 Claude의 파일 편집 도구용입니다. 편집 도구는 샌드박스 밖에서 돌아 권한 규칙만 따르기 때문입니다. 권한 규칙의 절대 경로는 `//`로 시작하고, 샌드박스 경로는 `/`나 `~/`로 씁니다.
+- 키 이름은 Claude Code 문서(sandboxing, settings)의 2026-11 기준입니다. 정리가 끝나면 이 설정을 지워도 됩니다.
+
 ## 안전하게 쓰기
 
 스크립트에는 삭제 호출이 없습니다(자기 임시 파일 `.part` 정리뿐). 이동은 같은 볼륨 안 rename이고 목적지에 파일이 있으면 건너뜁니다. 복사는 `.part`에 쓴 뒤 이름을 바꾸므로 잘린 파일이 남지 않고, 목적지의 다른 파일은 덮어쓰지 않고 충돌로 보고합니다. 모든 쓰기는 `moves_v2.csv`에 남습니다.
@@ -102,7 +150,7 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 }
 ```
 
-**2겹 — 쓰기 범위 제한.** Claude Code의 샌드박스(설정의 `sandbox` 항목, 또는 `/sandbox` 명령)를 켜면 셸 명령이 작업 폴더 밖에 쓰지 못합니다. 작업 폴더를 산출물 폴더로 열면, 마스터·원본 폴더에는 승인된 스크립트만 접근하게 됩니다. 설정 방법은 Claude Code 문서의 sandbox 항목을 따릅니다.
+**2겹 — 쓰기 범위 제한.** Claude Code의 샌드박스(`"sandbox": {"enabled": true}` 또는 `/sandbox` 명령)를 켜면 셸 명령이 작업 폴더와 `sandbox.filesystem.allowWrite`에 적은 곳 밖에 쓰지 못합니다. 마스터만 허용하고 원본 저장소는 `denyWrite`로 막습니다. 전체 설정 예는 위 「권장 설정」.
 
 이렇게 두면 삭제가 필요한 단계(격리 폴더 비우기, 스텁 제거)는 자연히 에이전트가 목록을 보고하고 사용자가 Finder·탐색기·웹에서 직접 하게 됩니다. 정리가 끝나면 거부 목록을 지워도 됩니다.
 

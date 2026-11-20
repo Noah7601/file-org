@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="-apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif">
+  <defs><marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#59636e"/></marker></defs>
+  <rect width="960" height="600" rx="16" fill="#ffffff"/>
+  <text x="30" y="44" font-size="22" font-weight="700" fill="#1f2328">작동 원리 — 명령 하나가 파일에 닿기까지 거치는 네 겹</text>
+  <text x="30" y="68" font-size="13.5" fill="#59636e">바깥 겹은 사고를 줄이고, 마지막 ① 스크립트 안의 규칙은 어떤 AI·사람이 돌려도 항상 지킨다.</text>
+
+  <!-- request & agent -->
+  <rect x="30" y="110" width="120" height="76" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="90" y="140" font-size="14.5" font-weight="700" fill="#1f2328" text-anchor="middle">사용자 요청</text>
+  <text x="90" y="164" font-size="12" fill="#59636e" text-anchor="middle">"파일 정리해줘"</text>
+  <path d="M152,148 L176,148" stroke="#59636e" stroke-width="1.8" marker-end="url(#c)"/>
+  <rect x="180" y="110" width="130" height="76" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="245" y="140" font-size="14.5" font-weight="700" fill="#1f2328" text-anchor="middle">AI 도우미</text>
+  <text x="245" y="164" font-size="12" fill="#59636e" text-anchor="middle">명령을 만든다</text>
+  <path d="M312,148 L336,148" stroke="#59636e" stroke-width="1.8" marker-end="url(#c)"/>
+
+  <!-- gate ② ③ -->
+  <rect x="340" y="96" width="180" height="250" rx="12" fill="#fbefff" stroke="#8250df" stroke-width="1.5"/>
+  <text x="430" y="122" font-size="14.5" font-weight="700" fill="#8250df" text-anchor="middle">실행 직전 검문</text>
+  <text x="430" y="140" font-size="11.5" fill="#8250df" text-anchor="middle">Claude Code 설정</text>
+  <text x="356" y="168" font-size="13.5" font-weight="700" fill="#1f2328">② 명령 거부 목록</text>
+  <text x="356" y="187" font-size="12" fill="#1f2328">rm · mv · rsync · del을</text>
+  <text x="356" y="203" font-size="12" fill="#1f2328">AI가 직접 치면 거부</text>
+  <text x="356" y="236" font-size="13.5" font-weight="700" fill="#1f2328">③ 훅 (선택)</text>
+  <text x="356" y="255" font-size="12" fill="#1f2328">디스크 여유가 부족하면</text>
+  <text x="356" y="271" font-size="12" fill="#1f2328">복사·해시·이동 시작 거부</text>
+  <text x="356" y="304" font-size="11.5" fill="#cf222e">못 막음: python -c 같은</text>
+  <text x="356" y="320" font-size="11.5" fill="#cf222e">다른 모양의 삭제 → ④·①</text>
+  <path d="M522,148 L546,148" stroke="#59636e" stroke-width="1.8" marker-end="url(#c)"/>
+
+  <!-- sandbox ④ -->
+  <rect x="550" y="96" width="380" height="330" rx="14" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="566" y="122" font-size="14.5" font-weight="700" fill="#0969da">④ 샌드박스 (운영체제가 강제)</text>
+  <text x="566" y="140" font-size="11.5" fill="#0969da">셸 명령이 닿을 수 있는 폴더·인터넷 주소를 제한</text>
+
+  <rect x="566" y="156" width="170" height="190" rx="10" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+  <text x="651" y="180" font-size="14" font-weight="700" fill="#1a7f37" text-anchor="middle">① 스크립트 안의 규칙</text>
+  <text x="651" y="198" font-size="11.5" fill="#1a7f37" text-anchor="middle">항상 켜짐 · 모델 무관</text>
+  <g font-size="12" fill="#1f2328">
+    <text x="580" y="224">· 승인 열(✓) 있는 줄만</text>
+    <text x="580" y="246">· 미리 돌리기가 기본</text>
+    <text x="580" y="268">· 덮어쓰기 없음</text>
+    <text x="580" y="290">· 디스크 가드 8 GiB</text>
+    <text x="580" y="312">· 모든 쓰기 기록</text>
+    <text x="580" y="334">· 삭제 호출 없음</text>
+  </g>
+  <path d="M738,200 L760,180" stroke="#59636e" stroke-width="1.5" marker-end="url(#c)"/>
+  <path d="M738,250 L760,250" stroke="#59636e" stroke-width="1.5" marker-end="url(#c)"/>
+  <path d="M738,300 L760,322" stroke="#cf222e" stroke-width="1.5" marker-end="url(#c)"/>
+
+  <rect x="764" y="156" width="152" height="54" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="840" y="178" font-size="13" font-weight="700" fill="#1a7f37" text-anchor="middle">마스터 · 산출물</text>
+  <text x="840" y="197" font-size="11.5" fill="#1f2328" text-anchor="middle">쓰기 허용</text>
+  <rect x="764" y="223" width="152" height="54" rx="8" fill="#fff8c5" stroke="#d4a72c"/>
+  <text x="840" y="245" font-size="13" font-weight="700" fill="#9a6700" text-anchor="middle">원본 저장소</text>
+  <text x="840" y="264" font-size="11.5" fill="#1f2328" text-anchor="middle">읽기만 (OneDrive·iCloud)</text>
+  <rect x="764" y="290" width="152" height="54" rx="8" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="840" y="312" font-size="13" font-weight="700" fill="#cf222e" text-anchor="middle">그 밖의 폴더</text>
+  <text x="840" y="331" font-size="11.5" fill="#1f2328" text-anchor="middle">쓰기 막힘</text>
+
+  <text x="566" y="372" font-size="11.5" fill="#cf222e">못 막음: 허용한 폴더(마스터) 안에서의 실수 → 그 안은 ①과 ②가 지킨다</text>
+  <text x="566" y="392" font-size="11.5" fill="#cf222e">쓰기 허용을 홈 전체로 넓히면 샌드박스는 사실상 보호하지 않는다</text>
+  <text x="566" y="412" font-size="11.5" fill="#59636e">macOS · Linux · WSL2에서 동작, Windows 기본 환경에는 없음</text>
+
+  <!-- bottom notes -->
+  <rect x="30" y="452" width="900" height="124" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="50" y="480" font-size="14.5" font-weight="700" fill="#1f2328">도구마다 무엇이 남나</text>
+  <g font-size="13" fill="#1f2328">
+    <text x="50" y="506" font-weight="700">Claude Code (macOS·Linux)</text><text x="300" y="506">① ② ③ ④ 모두</text>
+    <text x="50" y="530" font-weight="700">Claude Code (Windows 기본)</text><text x="300" y="530">① ② ③ — 샌드박스가 필요하면 WSL2 안에서 실행</text>
+    <text x="50" y="554" font-weight="700">Codex (GPT)</text><text x="300" y="554">① + 승인 모드(②와 비슷) + 샌드박스(④와 비슷). 훅(③)이 없어 디스크 가드는 ①에</text>
+  </g>
+</svg>
