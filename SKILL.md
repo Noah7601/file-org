@@ -17,6 +17,15 @@ description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·
 | 로그 | 마스터 안 `_정리로그/moves_v2.csv` 한 파일 | 형식은 `references/log-format.md` |
 | 디스크 여유 | 작업 전 측정, 가드 8 GiB(`copy_tree`·`find_dupes`에 내장, `--min-free`로 조정) | 클라우드 이관은 "내려받아 올리는" 구조라 로컬 사본이 쌓인다. 마스터가 클라우드여도 재는 곳은 이 컴퓨터의 로컬 디스크(클라우드 폴더는 서버 용량을 보고한다) |
 
+### 0.1 설치·안전 설정을 말로 요청받았을 때
+
+처음 쓰는 사람은 명령어를 모른다고 가정하고, 아래를 대신 한다. 설명은 짧고 평이하게.
+
+- **"이 스킬 설치해줘"**: 자신이 Claude Code면 `~/.claude/skills/file-org`, Codex면 `~/.codex/skills/file-org`에 `git clone` → `tests/smoke_test.py` 실행 → `PASS n / FAIL 0`을 한 줄로 보고. macOS에서 `git`·`python3`이 "개발자 도구 설치"를 요구하면 사용자에게 창에서 설치를 누르라고 안내하고 기다린다. Windows는 `py -3`.
+- **마스터 경로 찾기**: 사용자는 클라우드 폴더의 실제 경로를 모른다. macOS `~/Library/CloudStorage/`(Google Drive·OneDrive), iCloud `~/Library/Mobile Documents/com~apple~CloudDocs/`, Windows `G:\내 드라이브`·`%USERPROFILE%\OneDrive`를 읽기만 해서 후보를 보여 주고 고르게 한다.
+- **"안전 설정도 해줘"(Claude Code)**: README 「권장 설정」의 JSON을 실제 경로(마스터, 원본 저장소)로 채워 **먼저 보여 주고**, 승인받은 뒤 산출물 폴더의 `.claude/settings.json`에 쓴다. 사용자 전역 설정(`~/.claude/settings.json`)은 따로 묻지 않고는 건드리지 않는다. 기존 설정 파일이 있으면 덮어쓰지 않고 합친 결과를 보여 준다. 적용 뒤에는 산출물 폴더에서 새 세션을 열어야 반영된다고 알린다. Codex면 `~/.codex/config.toml`에 넣을 줄을 보여 주고 사용자가 넣게 한다.
+- **자동 관리**: 매일 감시·주간 제안은 스킬 설치만으로는 돌지 않는다. 원하면 쓰는 도구의 예약 기능(또는 OS 예약 작업)으로 걸어 주고, 첫 실행은 사용자가 지켜보며 허용을 저장하게 한다(`references/docsets.md` 6절).
+
 사용자에게 처음 물어볼 것은 딱 셋이다: **마스터를 어디로 할지, 삭제를 허용할지(기본 불허), 분류를 누가 확정할지(기본: 제안은 내가, 승인은 사용자).** 나머지는 측정하면 나온다.
 
 ## 1. 원칙 (각각 왜 생겼는지까지)
