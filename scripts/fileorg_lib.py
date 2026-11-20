@@ -151,5 +151,51 @@ def log_row(log_path, action, src, dst, reason):
         w.writerow([time.strftime("%Y-%m-%dT%H:%M:%S"), action, src, dst, reason])
 
 
+MIN_FREE_GIB = 8.0   # disk guard: stop before the local disk drops below this
+
+
 def free_gib(path="."):
+    fake = os.environ.get("FILEORG_TEST_FREE_GIB")   # self-test only: simulate a nearly full disk
+    if fake:
+        return float(fake)
     return shutil.disk_usage(path).free / 2**30   # os.statvfs does not exist on Windows
+
+
+def local_free_gib(*paths):
+    """Free space that a copy actually consumes: the smallest of the home disk (cloud clients cache
+    downloads and uploads there; a cloud mount itself reports server quota) and each given path's disk."""
+    vals = []
+    for p in (os.path.expanduser("~"),) + paths:
+        while p and not os.path.exists(p):
+            p = os.path.dirname(p)
+        if p:
+            try:
+                vals.append(free_gib(p))
+            except OSError:
+                pass
+    return min(vals) if vals else float("inf")
+
+
+class DiskGuard:
+    """Thread-safe running check. ok() re-measures at most every `every` seconds or `every_bytes` bytes
+    and latches to False once free space falls below min_gib (0 disables)."""
+    def __init__(self, min_gib, *paths, every=2.0, every_bytes=256 << 20):
+        import threading
+        self.min, self.paths, self.every, self.every_bytes = min_gib, paths, every, every_bytes
+        self.lock = threading.Lock(); self.t = 0.0; self.bytes = 0; self.low = None; self.last = None
+
+    def ok(self, add_bytes=0):
+        if self.min <= 0:
+            return True
+        with self.lock:
+            if self.low is not None:
+                return False
+            self.bytes += add_bytes
+            now = time.time()
+            if self.last is None or now - self.t >= self.every or self.bytes >= self.every_bytes:
+                self.t, self.bytes = now, 0
+                self.last = local_free_gib(*self.paths)
+                if self.last < self.min:
+                    self.low = self.last
+                    return False
+            return True

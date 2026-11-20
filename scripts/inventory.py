@@ -3,7 +3,7 @@
 extension mix, and an optional per-file CSV. Use it before proposing anything."""
 import argparse, collections, csv, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fileorg_lib import walk_files, is_dataless, nfc, EXCLUDE_DIRS, free_gib
+from fileorg_lib import walk_files, is_dataless, nfc, EXCLUDE_DIRS, local_free_gib, MIN_FREE_GIB
 
 ap = argparse.ArgumentParser()
 ap.add_argument("root")
@@ -25,7 +25,9 @@ for p, rel, st in walk_files(a.root, set(a.exclude)):
     if a.out:
         rows.append([nfc(rel), st.st_size, time.strftime("%Y-%m-%d", time.localtime(st.st_mtime)), e, int(z), int(d), int(l)])
 
-print(f"{a.root}\n  파일 {n:,} · {size/2**30:.2f} GiB · 0바이트 {zero:,} · 클라우드 전용 {dataless:,} · 링크 {links:,} · 디스크 여유 {free_gib(a.root):.1f} GiB")
+print(f"{a.root}\n  파일 {n:,} · {size/2**30:.2f} GiB · 0바이트 {zero:,} · 클라우드 전용 {dataless:,} · 링크 {links:,} · 디스크 여유 {local_free_gib(a.root):.1f} GiB")
+if local_free_gib(a.root) < MIN_FREE_GIB:
+    print(f"  ⚠ 로컬 디스크 여유가 기준 {MIN_FREE_GIB:g} GiB보다 적습니다. 복사·해시 작업 전에 공간을 비우세요(복사·중복 스크립트는 기준 아래에서 멈춥니다).")
 print("  확장자(상위):", ", ".join(f"{k} {v:,}({ext_bytes[k]/2**20:.0f}MB)" for k, v in ext.most_common(a.top)))
 print("  수정연도:", ", ".join(f"{k} {v:,}" for k, v in sorted(years.items())))
 if a.out:

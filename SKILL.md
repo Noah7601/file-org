@@ -5,7 +5,7 @@ description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·
 
 # file-org — 무손실 파일 정리
 
-두 달짜리 실제 정리 프로젝트(로컬 + Google Drive + OneDrive + iCloud, 2만여 건)에서 검증된 절차다. macOS에서 검증했고, 스크립트는 표준 라이브러리만 써서 Windows 11(Python 3.12, OneDrive·Drive for desktop 실측)에서도 같은 결과를 확인했다. Linux도 같은 절차로 돈다(플랫폼별 차이는 `references/cloud-fs.md`). 핵심은 한 가지: **사용자가 돌이킬 수 없는 일은 하지 않는다.** 그 위에 "측정 → 제안 → dry-run → 승인 → 적용 → 검증 → 기록"을 한 단계씩 돈다.
+두 달짜리 실제 정리 프로젝트(로컬 + Google Drive + OneDrive + iCloud, 2만여 건)에서 검증된 절차다. macOS에서 검증했다. Windows 11(Python 3.12, OneDrive·Drive for desktop 실측)에서는 측정·중복·적용·복사·클라우드 판정까지 확인했고, 그 뒤에 더한 체크기·관제탑·감시·디스크 가드는 아직 Windows에서 돌려 보지 않았다. Linux도 같은 절차로 돈다(플랫폼별 차이는 `references/cloud-fs.md`). 핵심은 한 가지: **사용자가 돌이킬 수 없는 일은 하지 않는다.** 그 위에 "측정 → 제안 → dry-run → 승인 → 적용 → 검증 → 기록"을 한 단계씩 돈다.
 
 ## 0. 시작 전에 반드시 정하는 것
 
@@ -15,7 +15,7 @@ description: "흩어진 파일을 한 곳의 마스터 폴더 체계로 복구·
 | 산출물 폴더 | 마스터 밖의 git 저장소 (예: macOS `~/Documents/파일정리/`, Windows `C:\Users\<이름>\Documents\파일정리\`; 그 폴더가 OneDrive·iCloud 동기화 대상이면 밖으로) | 계획·CSV·로그가 작업 자체에 휩쓸리면 안 됨 |
 | 스크립트 폴더 | 동기화 안 되는 곳 (예: macOS `~/projects/file-org/`, Windows `C:\projects\file-org\`) | iCloud·Drive가 `.py`·`node_modules`까지 올리면 느려지고 꼬임 |
 | 로그 | 마스터 안 `_정리로그/moves_v2.csv` 한 파일 | 형식은 `references/log-format.md` |
-| 디스크 여유 | 작업 전 측정, 가드 8 GiB | 클라우드 이관은 "내려받아 올리는" 구조라 로컬 사본이 쌓인다 |
+| 디스크 여유 | 작업 전 측정, 가드 8 GiB(`copy_tree`·`find_dupes`에 내장, `--min-free`로 조정) | 클라우드 이관은 "내려받아 올리는" 구조라 로컬 사본이 쌓인다. 마스터가 클라우드여도 재는 곳은 이 컴퓨터의 로컬 디스크(클라우드 폴더는 서버 용량을 보고한다) |
 
 사용자에게 처음 물어볼 것은 딱 셋이다: **마스터를 어디로 할지, 삭제를 허용할지(기본 불허), 분류를 누가 확정할지(기본: 제안은 내가, 승인은 사용자).** 나머지는 측정하면 나온다.
 
@@ -72,16 +72,17 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 | 스크립트 | 용도 | 기본 동작 |
 |---|---|---|
 | `inventory.py <root> [--out csv]` | 측정 | 읽기 전용 |
-| `find_dupes.py <root> [--quarantine DIR] [--apply]` | 내용 동일 중복 찾기(크기 → sha1) | dry-run |
+| `find_dupes.py <root> [--quarantine DIR] [--apply] [--min-free 8]` | 내용 동일 중복 찾기(크기 → sha1). 해시는 클라우드 파일을 내려받으므로 여유가 기준 아래면 아무것도 옮기지 않고 멈춤(종료 코드 3) | dry-run |
 | `apply_moves.py --root R --proposals CSV --log LOG [--apply] [--dedupe]` | 승인된 제안 CSV(src, dest, why[, approved]) 적용 | dry-run, 덮어쓰기 없음, 사후 검증, 로그 |
-| `copy_tree.py SRC DST [--exclude ...]` | 클라우드 전용 원본도 견디는 파일 단위 복사(재시도·재개·검증) | 복사(삭제·덮어쓰기 없음, `.part`에 쓴 뒤 이름 변경, 동명 다른 파일은 충돌로 보고) |
+| `copy_tree.py SRC DST [--exclude ...] [--min-free 8] [--allow-tight]` | 클라우드 전용 원본도 견디는 파일 단위 복사(재시도·재개·검증). **디스크 가드**: 시작 전 복사할 양과 여유를 비교해 모자라면 시작 안 함(종료 코드 2), 진행 중 기준 아래로 내려가면 깔끔히 멈춤(종료 코드 3, `STOPPED_DISK`) → 공간 확보 후 같은 명령으로 이어서 | 복사(삭제·덮어쓰기 없음, `.part`에 쓴 뒤 이름 변경, 동명 다른 파일은 충돌로 보고) |
 | `check_docsets.py --root DIR --rules JSON [--out D --name N]` | 거래 폴더별 필수 서류 검사(있음·zip 안에만·다른 폴더·부족·없음) | 읽기 전용, 보고서만 |
 | `extract_zip_only.py --root DIR --log LOG [--apply]` | 제출 zip 안에만 있는 서류를 낱개로 복사 | dry-run, zip 유지, 덮어쓰기 없음 |
 | `watch.py --root R --state D [--scatter …] [--against-days N]` | 지속 관리: 매일 사진 찍고 직전과 비교(사라짐·새 0바이트·이동·새 파일·중복 후보·흩어짐). `--against-days 7`은 주간 제안용 비교(사진 저장 안 함). 예약 실행은 산출물로 확인(references/docsets.md 6절) | 읽기 전용 |
 | `control_tower.py --root R [--checks D --watch D --refresh-cmd C]` | 관제탑: 폴더 지도·사업 보드·할 일·최근 기록, 새로고침 버튼 | 보기 전용, 127.0.0.1 |
 | `evict_icloud.swift` | iCloud 로컬 사본 축출(클라우드 원본 불변), **macOS 전용** | `swiftc -O evict_icloud.swift -o evict_icloud` |
+| `hooks/disk_guard_hook.py` | 선택: Claude Code PreToolUse 훅. 여유가 기준 아래면 복사·해시·이동 스크립트를 시작 전에 막음(설정 예는 README) | 검사만 |
 
-새 환경에서는 먼저 `python3 tests/smoke_test.py`를 돌린다(임시 폴더에 시험 트리를 만들어 네 스크립트를 dry-run→apply로 돌리고 46개 항목을 검사, 실패 시 종료 코드 1). `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 lstat만으로 확인한다. macOS·Windows 11에서 전부 통과한 상태가 기준이다.
+새 환경에서는 먼저 `python3 tests/smoke_test.py`를 돌린다(임시 폴더에 시험 트리를 만들어 네 스크립트를 dry-run→apply로 돌리고 53개 항목을 검사, 실패 시 종료 코드 1). `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 lstat만으로 확인한다. macOS에서 53개 전부 통과. Windows 11은 2026-11-13 판 28개 항목만 통과 확인(이후 항목은 미검증)이다. 디스크 가드가 멈추면(종료 코드 2·3) 사용자에게 공간 확보를 요청하고 기다린다. 기준을 낮추거나 `--min-free 0`으로 끄는 것은 사용자가 정한다.
 
 스크립트를 새로 짜기 전에 이 도구들로 되는지 먼저 본다. 새로 짜면 같은 규칙(dry-run 기본, 로그, NFC, 덮어쓰기 없음)을 지킨다.
 

@@ -5,8 +5,8 @@
 
 Builds a small tree (Korean names incl. an NFD one, identical/different same-name files, a 0-byte file,
 an excluded node_modules), then runs inventory → find_dupes → apply_moves --dedupe --mkdir → find_dupes --apply
-→ copy_tree twice → copy_tree onto a pre-filled destination (no overwrite, no .part) → docset checker, zip extraction, control tower functions. Only the work dir is written; --cloud-dir is never read, only lstat'ed.
-Verified 2026-11 on macOS 26 and Windows 11 (Python 3.12). Exit code 1 on any FAIL."""
+→ copy_tree twice → copy_tree onto a pre-filled destination (no overwrite, no .part) → disk guard (start/stop/resume, hook) → docset checker, zip extraction, control tower functions. Only the work dir is written; --cloud-dir is never read, only lstat'ed.
+Verified 2026-11 on macOS 26 (all items) and Windows 11 / Python 3.12 (the 28 items of 2026-11-13; later checks not yet run on Windows). Exit code 1 on any FAIL."""
 import argparse, csv, hashlib, json, os, shutil, subprocess, sys, tempfile, time, unicodedata
 for _s in (sys.stdout, sys.stderr):
     try: _s.reconfigure(encoding="utf-8")
@@ -23,8 +23,9 @@ PY = sys.executable; SRC = os.path.join(WORK, "src"); LOG = os.path.join(WORK, "
 R = []
 def check(name, ok, detail=""):
     R.append((name, bool(ok))); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
-def run(script, *args):
-    r = subprocess.run([PY, os.path.join(SK, script), *args], capture_output=True)
+def run(script, *args, free=100, stdin=None):
+    env = dict(os.environ, FILEORG_TEST_FREE_GIB=str(free))   # deterministic disk guard regardless of this machine's disk
+    r = subprocess.run([PY, os.path.join(SK, script), *args], capture_output=True, env=env, input=stdin)
     return r.returncode, r.stdout.decode("utf-8", "replace") + r.stderr.decode("utf-8", "replace")
 def put(rel, data):
     p = os.path.join(SRC, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -125,6 +126,26 @@ if unreadable:
     check("copy_tree 읽기 실패 → 오류 1, 잘린 파일 없음", "오류 1" in out and not os.path.exists(os.path.join(DC, "noread.txt")), last(out, -2))
     os.chmod(unreadable, 0o644)
 check("copy_tree .part 잔여 없음", not any(n.endswith(".part") for dp, dn, fn in os.walk(WORK) for n in fn))
+
+# 5c. disk guard: refuse to start when short, stop cleanly while running, resume after space is freed
+DG = os.path.join(WORK, "dst_guard"); eg = os.path.join(WORK, "copy_errors_g.csv")
+rc, out = run("copy_tree.py", SRC, DG, "--errors", eg, free=5)
+check("디스크 가드: 여유 부족이면 복사를 시작하지 않음(rc=2, 파일 0)", rc == 2 and "시작하지 않음" in out and not os.path.exists(DG), last(out))
+rc, out = run("copy_tree.py", SRC, DG, "--errors", eg, "--allow-tight", free=5)
+copied = sum(len(fn) for dp, dn, fn in os.walk(DG)) if os.path.isdir(DG) else 0
+check("디스크 가드: 진행 중 기준 아래면 멈춤(rc=3, STOPPED_DISK, 복사 0)", rc == 3 and "STOPPED_DISK" in out and copied == 0, last(out))
+rc, out = run("copy_tree.py", SRC, DG, "--errors", eg)
+check("디스크 가드: 공간 확보 뒤 같은 명령으로 이어서 완료", rc == 0 and "ALL_DONE" in out and "검증 불일치 0" in out, last(out, -2))
+rc, out = run("copy_tree.py", SRC, os.path.join(WORK, "dst_guard_off"), "--errors", eg, "--min-free", "0", free=1)
+check("디스크 가드: --min-free 0이면 끔", rc == 0 and "ALL_DONE" in out, last(out, -2))
+rc, out = run("find_dupes.py", SRC, free=5)
+check("디스크 가드: find_dupes는 해시 전에 멈추고 아무것도 안 옮김(rc=3)", rc == 3 and "STOPPED_DISK" in out, last(out))
+HOOK = os.path.join(os.path.dirname(SK), "hooks", "disk_guard_hook.py")
+def hook(cmd, free):
+    env = dict(os.environ, FILEORG_TEST_FREE_GIB=str(free))
+    return subprocess.run([PY, HOOK], input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}}).encode(), capture_output=True, env=env).returncode
+check("훅 예시: 여유 부족 + copy_tree면 막음(2), 충분하면 통과(0), 관계없는 명령은 통과(0)",
+      hook("python3 scripts/copy_tree.py a b", 3) == 2 and hook("python3 scripts/copy_tree.py a b", 50) == 0 and hook("ls -la", 3) == 0)
 
 # 7. 문서세트 체크기 · 제출 zip 낱개 보관 · 관제탑(서버는 띄우지 않고 함수만)
 import zipfile

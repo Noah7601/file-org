@@ -239,7 +239,7 @@ python3 ~/.claude/skills/file-org/tests/smoke_test.py</code></pre>
     <tr><td><code>inventory.py &lt;폴더&gt; [--out csv]</code></td><td>측정. 파일 수·용량·0바이트·클라우드 전용·확장자 분포. 파일별 CSV 선택.</td><td>읽기 전용</td></tr>
     <tr><td><code>find_dupes.py &lt;폴더&gt; [--quarantine DIR --log LOG --apply]</code></td><td>내용이 같은 중복 찾기. 크기가 같은 것끼리만 sha1 비교. 접미 없는 쪽을 보관본으로.</td><td>dry-run → 격리 이동</td></tr>
     <tr><td><code>apply_moves.py --root R --proposals CSV --log LOG [--apply --dedupe --quarantine DIR --mkdir]</code></td><td>승인된 제안 CSV(열: src, dest, why, approved) 적용. ✓가 있는 행만. 동명 충돌은 건너뛰고, <code>--dedupe</code>면 같은 내용은 격리·다른 내용은 <code> (2)</code>.</td><td>dry-run → rename, 사후 검증, 로그</td></tr>
-    <tr><td><code>copy_tree.py SRC DST [--exclude …] [--workers 8] [--retry …]</code></td><td>클라우드 전용 원본도 견디는 파일 단위 복사. 읽은 즉시 쓰기, 재시도, 크기 검증, 재개 가능. 목적지의 다른 파일은 덮어쓰지 않고 "충돌"로 보고.</td><td>복사만, 삭제·덮어쓰기 없음</td></tr>
+    <tr><td><code>copy_tree.py SRC DST [--exclude …] [--workers 8] [--retry …]</code></td><td>클라우드 전용 원본도 견디는 파일 단위 복사. 읽은 즉시 쓰기, 재시도, 크기 검증, 재개 가능. 목적지의 다른 파일은 덮어쓰지 않고 "충돌"로 보고. <b>디스크 가드</b>: 시작 전 복사할 양과 여유를 비교해 모자라면 시작하지 않고, 진행 중 여유가 8 GiB(<code>--min-free</code>) 아래로 내려가면 멈춤. 공간을 비운 뒤 같은 명령으로 이어서.</td><td>복사만, 삭제·덮어쓰기 없음</td></tr>
     <tr><td><code>evict_icloud &lt;경로&gt;…</code></td><td>iCloud 로컬 사본만 비우고 클라우드 원본은 그대로. macOS 전용, <code>swiftc -O scripts/evict_icloud.swift -o scripts/evict_icloud</code>로 빌드.</td><td>로컬 공간 회수</td></tr>
   </tbody>
 </table></div>
@@ -416,7 +416,9 @@ _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
   }
 }</code></pre>
 <p><b>2겹, 쓰기 범위 제한.</b> Claude Code의 샌드박스(설정의 <code>sandbox</code> 항목 또는 <code>/sandbox</code>)를 켜면 셸 명령이 작업 폴더 밖에 쓰지 못합니다. 이렇게 두면 삭제가 필요한 단계는 도우미가 목록만 보고하고 사람이 직접 하게 됩니다. 정리가 끝나면 거부 목록을 지워도 됩니다.</p></details>
-<details><summary>Windows에서도 되나요?</summary><p>Windows 11 + Python 3.12에서 자체 검사 28개 항목을 통과했습니다. OneDrive 파일 온디맨드 속성 판정, 260자 경로, 휴지통 보내기까지 확인했습니다. iCloud for Windows는 미검증입니다.</p></details>
+<details><summary>디스크가 꽉 차면요?</summary><p>복사와 중복 찾기는 이 컴퓨터의 로컬 디스크 여유를 계속 잽니다. 시작 전에 모자라면 시작하지 않고, 진행 중 8 GiB 아래로 내려가면 그 자리에서 멈춥니다. 클라우드 캐시를 비운 뒤(Finder "다운로드 제거", 탐색기 "온라인 전용") 같은 명령을 다시 돌리면 이어서 합니다. Claude Code를 쓰면 시작 전에 한 번 더 막는 훅도 붙일 수 있습니다(README).</p></details>
+<details><summary>GPT(Codex)에서도 되나요?</summary><p>됩니다. 스크립트와 설명서는 모델과 관계없습니다. 다만 명령 거부 목록과 훅은 Claude Code 설정이라, Codex에서는 Codex의 승인 모드와 샌드박스로 같은 일을 합니다(README "Codex에서 쓸 때"). 웹 채팅창(ChatGPT·Claude 웹)은 파일과 명령에 손을 못 대서 쓸 수 없습니다.</p></details>
+<details><summary>Windows에서도 되나요?</summary><p>기본 정리 도구는 됩니다. Windows 11 + Python 3.12에서 그때 자체 검사 28개 항목(측정·중복·적용·복사, OneDrive 파일 온디맨드 속성 판정, 260자 경로, 휴지통 보내기)을 통과했습니다. 그 뒤에 더한 체크기·관제탑·감시·디스크 가드는 아직 Windows에서 돌려 보지 않았고, iCloud for Windows도 미검증입니다.</p></details>
 <details><summary>정리가 끝난 뒤에는?</summary><p>폴더 경로는 "이 네 파일이 한 세트"라는 관계를 담지 못합니다. 그래서 거래 하나를 하위폴더 하나로 두고, 지침의 필수 증빙 목록을 코드로 검사하는 체크기를 돌립니다. 결과는 경고 목록으로만 나오고, 고치는 것은 평소의 제안→승인→적용 절차를 탑니다. 세부는 <code>references/ontology.md</code>.</p></details>
 
 <h2 id="terms"><small>10</small>용어</h2>
@@ -432,6 +434,6 @@ _정리로그/{moves_v2.csv, 격리 폴더들}</code></pre>
 </dl>
 
 <footer>
-  <p>두 달 동안 실제 정리(저장소 4곳, 2만여 파일)에서 나온 절차이고, macOS와 Windows 11에서 검증했습니다. 코드·상세 문서: <a href="https://github.com/Noah7601/file-org">github.com/Noah7601/file-org</a> (MIT)</p>
+  <p>두 달 동안 실제 정리(저장소 4곳, 2만여 파일)에서 나온 절차이고, macOS에서 검증했습니다(Windows 11은 기본 정리 도구까지). 코드·상세 문서: <a href="https://github.com/Noah7601/file-org">github.com/Noah7601/file-org</a> (MIT)</p>
 </footer>
 </div>

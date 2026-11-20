@@ -4,7 +4,7 @@
 
 핵심 원칙 하나: **사용자가 돌이킬 수 없는 일은 하지 않는다.** 삭제 없음(이동·복사·격리만), 덮어쓰기 없음, 모든 쓰기는 dry-run → 사용자 승인 → 적용 → 독립 검증 → 로그.
 
-실제 2개월짜리 정리 프로젝트(저장소 4곳, 2만여 파일)에서 나온 절차이고, macOS와 Windows 11에서 검증했습니다.
+실제 2개월짜리 정리 프로젝트(저장소 4곳, 2만여 파일)에서 나온 절차입니다. macOS에서 검증했고, Windows 11에서는 기본 정리 도구(측정·중복·적용·복사)까지 확인했습니다(아래 "알려진 한계").
 
 설명서·사용 방법(한 페이지, 평이한 말로): [`docs/README.html`](docs/README.html) — 받아서 브라우저로 열면 된다.
 
@@ -30,6 +30,7 @@ references/ontology.md   그 다음: 관계를 그래프로 다루는 최소 온
 scripts/                 inventory · find_dupes · apply_moves · copy_tree · evict_icloud(macOS)
                          check_docsets · extract_zip_only · control_tower(관제탑) · watch(지속 관리)
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
+hooks/                   선택: Claude Code 디스크 가드 훅
 docs/README.html         설명서(한 페이지, 그림 포함)
 docs/img/                한눈에 보기 · 온톨로지 그림(SVG)
 ```
@@ -50,7 +51,7 @@ Codex는 `~/.codex/skills/file-org`에 같은 내용을 둡니다. 스크립트�
 python3 tests/smoke_test.py
 ```
 
-임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 46개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
+임시 폴더에 시험 트리를 만들어 스크립트 네 개를 dry-run → apply로 돌리고 53개 항목(NFD 이름, 동명 충돌, 격리, 덮어쓰기 없음, 재개, 디스크 가드, 체크기, zip 보관, 관제탑 보안, 지속 관리)을 검사합니다. `--cloud-dir <OneDrive·iCloud 폴더>`를 주면 실제 동기화 폴더의 클라우드 전용 판정도 읽기 전용(lstat)으로 확인합니다.
 
 ## 사용
 
@@ -62,10 +63,12 @@ python3 tests/smoke_test.py
 python3 scripts/inventory.py <폴더>                                   # 측정(읽기 전용)
 python3 scripts/find_dupes.py <폴더> [--quarantine DIR --log LOG --apply]
 python3 scripts/apply_moves.py --root R --proposals CSV --log LOG [--apply --dedupe --quarantine DIR --mkdir]
-python3 scripts/copy_tree.py SRC DST [--exclude node_modules .venv]
+python3 scripts/copy_tree.py SRC DST [--exclude node_modules .venv] [--min-free 8]
 ```
 
 전부 dry-run이 기본이고, `--apply`를 붙여야 실제로 씁니다.
+
+**디스크 여유.** 클라우드 이관은 내려받아 올리는 구조라 로컬 디스크가 찹니다(실제로 배치 하나에 약 4 GiB씩). 그래서 `copy_tree`는 시작 전에 복사할 양과 여유를 비교해 모자라면 시작하지 않고(종료 코드 2), 진행 중에도 여유가 기준(기본 8 GiB) 아래로 내려가면 그 자리에서 멈춥니다(종료 코드 3). 공간을 비운 뒤 같은 명령을 다시 돌리면 이어서 복사합니다. `find_dupes`도 해시 계산 중(클라우드 파일은 읽으면 내려받음) 같은 기준으로 멈춥니다. 재는 곳은 이 컴퓨터의 로컬 디스크입니다(클라우드 폴더는 서버 용량을 보고하므로).
 
 정리가 끝난 뒤 증빙 점검과 관제탑:
 
@@ -101,11 +104,34 @@ python3 scripts/watch.py --root <마스터> --state <상태 폴더> --scatter ~/
 
 이렇게 두면 삭제가 필요한 단계(격리 폴더 비우기, 스텁 제거)는 자연히 에이전트가 목록을 보고하고 사용자가 Finder·탐색기·웹에서 직접 하게 됩니다. 정리가 끝나면 거부 목록을 지워도 됩니다.
 
+**3겹(선택) — 디스크 가드 훅.** 스크립트 안의 가드가 기본이고, Claude Code에서는 시작 전 한 번 더 막는 훅을 붙일 수 있습니다. 여유가 기준 아래면 복사·해시·이동 스크립트를 실행 전에 거부하고 그 이유를 에이전트에게 알려 줍니다.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 ~/.claude/skills/file-org/hooks/disk_guard_hook.py"}]}
+    ]
+  }
+}
+```
+
+기준은 환경 변수 `FILEORG_MIN_FREE_GIB`로 바꿉니다(기본 8).
+
+### Codex(GPT)에서 쓸 때
+
+스크립트와 SKILL.md는 모델과 관계없이 같습니다(`~/.codex/skills/file-org`에 두면 Codex가 읽습니다). 다른 것은 안전장치를 거는 곳입니다. 위의 거부 목록·훅은 Claude Code 설정이라 Codex에는 적용되지 않습니다.
+
+- `~/.codex/config.toml`에서 명령 승인을 켜고(`approval_policy = "on-request"` 또는 `"untrusted"`), 쓰기를 작업 폴더로 제한합니다(`sandbox_mode = "workspace-write"`). 작업 폴더는 산출물 폴더로 엽니다. 키 이름은 이 글을 쓸 때 기준이니 Codex 문서에서 최신 이름을 확인하세요.
+- 디스크 가드는 스크립트 안에 있으므로 Codex에서도 그대로 동작합니다.
+- 매일 감시·주간 제안 같은 예약 실행은 각 도구의 예약 기능이나 OS 예약 작업(macOS `launchd`·`cron`, Windows 작업 스케줄러)으로 붙입니다. 무인 실행은 "성공" 표시가 아니라 산출물로 확인합니다(`references/docsets.md` 6절).
+
 ## 알려진 한계
 
 - Google Drive for desktop(Windows)은 클라우드 전용 파일을 속성으로 구분할 수 없어 "읽으면 내려받는다"로 가정합니다.
 - 마스터를 OneDrive·iCloud로 둘 때의 업로드 확인 요령은 아직 Drive만큼 자세하지 않습니다.
 - iCloud for Windows는 미검증입니다.
+- Windows 11에서는 2026-11-13 판의 자체 검사 28개(측정·중복·적용·복사·클라우드 판정·긴 경로·휴지통)만 통과를 확인했습니다. 그 뒤에 더한 체크기·zip 낱개 보관·관제탑·감시·디스크 가드는 Windows에서 아직 돌려 보지 않았습니다. 특히 관제탑의 새로고침 명령(셸 따옴표)과 "탐색기에서 보기"(한글·공백 경로), 바탕화면이 OneDrive 안(`OneDrive\바탕 화면`)에 있는 경우의 감시 경로를 확인해야 합니다.
 
 ## 라이선스
 

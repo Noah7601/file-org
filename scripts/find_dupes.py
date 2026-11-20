@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Find content-identical duplicates (same size, then sha1). Default dry-run prints groups.
 --quarantine DIR --apply moves every non-keeper into DIR/<original relative path> and logs it.
-Keeper = the copy whose name has no ' (2)' / ' (iCloud)' style suffix, then the shallowest path."""
+Keeper = the copy whose name has no ' (2)' / ' (iCloud)' style suffix, then the shallowest path.
+Hashing a cloud-only file downloads it, so a disk guard stops hashing below --min-free GiB (default 8, 0 = off):
+nothing is moved, exit 3, STOPPED_DISK; free space and re-run."""
 import argparse, csv, os, re, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fileorg_lib import size_index, sha1, nfc, log_row, EXCLUDE_DIRS
+from fileorg_lib import size_index, sha1, nfc, log_row, EXCLUDE_DIRS, MIN_FREE_GIB, DiskGuard
 
 ap = argparse.ArgumentParser()
 ap.add_argument("root")
@@ -14,6 +16,7 @@ ap.add_argument("--log", help="moves_v2.csv path (required with --apply)")
 ap.add_argument("--out", help="write groups CSV")
 ap.add_argument("--exclude", nargs="*", default=sorted(EXCLUDE_DIRS))
 ap.add_argument("--min-size", type=int, default=1)
+ap.add_argument("--min-free", type=float, default=MIN_FREE_GIB, help="GiB of local free space to keep while hashing (0 = off)")
 a = ap.parse_args()
 root = os.path.abspath(a.root)
 if a.apply and not (a.quarantine and a.log):
@@ -24,12 +27,16 @@ def rank(p):
     rel = os.path.relpath(p, root)
     return (1 if SUFFIX.search(os.path.basename(rel)) else 0, rel.count(os.sep), len(rel))
 
-groups = []
+groups = []; guard = DiskGuard(a.min_free, root)
 for size, paths in size_index(root, set(a.exclude)).items():
     if len(paths) < 2 or size < a.min_size:
         continue
     by_hash = {}
     for p in paths:
+        if not guard.ok(size):
+            print(f"디스크 가드로 중단: 여유 {guard.low:.1f} GiB < 기준 {a.min_free:g} GiB. 해시 계산(클라우드 파일은 내려받음)을 멈췄고 아무것도 옮기지 않았습니다."
+                  " 공간을 비운 뒤 다시 실행하세요.", flush=True)
+            print("STOPPED_DISK", flush=True); sys.exit(3)
         by_hash.setdefault(sha1(p), []).append(p)
     for h, ps in by_hash.items():
         if len(ps) > 1:
