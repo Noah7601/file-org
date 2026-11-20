@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" width="960" height="640" font-family="-apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#59636e"/></marker>
+  </defs>
+  <rect width="960" height="640" rx="16" fill="#ffffff"/>
+  <text x="30" y="44" font-size="22" font-weight="700" fill="#1f2328">file-org 한눈에 보기</text>
+  <text x="30" y="68" font-size="13.5" fill="#59636e">흩어진 파일을 한 곳에 모으고, 모든 작업은 사람이 승인한 뒤에만 실행하고, 정리한 상태를 계속 지킨다.</text>
+
+  <!-- ① 모으기 -->
+  <text x="30" y="108" font-size="15" font-weight="700" fill="#0969da">① 모으기 — 흩어진 파일을 한 곳으로</text>
+  <g font-size="13.5" fill="#1f2328">
+    <rect x="30" y="124" width="200" height="34" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="130" y="146" text-anchor="middle">다운로드 · 바탕화면</text>
+    <rect x="30" y="166" width="200" height="34" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="130" y="188" text-anchor="middle">Google Drive</text>
+    <rect x="30" y="208" width="200" height="34" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="130" y="230" text-anchor="middle">OneDrive</text>
+    <rect x="30" y="250" width="200" height="34" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="130" y="272" text-anchor="middle">iCloud Drive</text>
+  </g>
+  <path d="M236,204 L330,204" stroke="#59636e" stroke-width="2" marker-end="url(#a)"/>
+  <text x="283" y="194" font-size="12" fill="#59636e" text-anchor="middle">복사 · 이동</text>
+  <text x="283" y="224" font-size="12" fill="#59636e" text-anchor="middle">원본 보존</text>
+
+  <rect x="340" y="124" width="300" height="160" rx="10" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="358" y="150" font-size="15" font-weight="700" fill="#0969da">마스터 폴더 (한 곳)</text>
+  <g font-size="13" fill="#1f2328">
+    <text x="358" y="176">00_INBOX — 분류 대기</text>
+    <text x="358" y="200">10_회사 · 20_재무 · 30_계약 …</text>
+    <text x="358" y="224">40_프로젝트 / 연도_이름 / 종류</text>
+    <text x="358" y="248">90_미디어 · 99_보관</text>
+    <text x="358" y="272">_정리로그 — 모든 이동 기록</text>
+  </g>
+
+  <rect x="670" y="124" width="260" height="160" rx="10" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="688" y="150" font-size="15" font-weight="700" fill="#cf222e">절대 하지 않는 것</text>
+  <g font-size="13" fill="#1f2328">
+    <text x="688" y="176">· 삭제 (격리 · 휴지통만)</text>
+    <text x="688" y="200">· 덮어쓰기</text>
+    <text x="688" y="224">· 0바이트 껍데기를 원본으로 믿기</text>
+    <text x="688" y="248">· 비밀키 · 인증서 클라우드 업로드</text>
+    <text x="688" y="272">· 승인 없이 옮기기</text>
+  </g>
+
+  <!-- ② 한 바퀴 -->
+  <text x="30" y="332" font-size="15" font-weight="700" fill="#0969da">② 한 바퀴 — 모든 쓰기 작업은 이 순서로</text>
+  <g font-size="13.5" text-anchor="middle">
+    <rect x="46" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="102" y="374" fill="#1f2328" font-weight="600">측정</text><text x="102" y="394" fill="#59636e" font-size="11.5">읽기만</text>
+    <rect x="172" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="228" y="374" fill="#1f2328" font-weight="600">제안</text><text x="228" y="394" fill="#59636e" font-size="11.5">CSV 한 장</text>
+    <rect x="298" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="354" y="374" fill="#1f2328" font-weight="600">미리 돌리기</text><text x="354" y="394" fill="#59636e" font-size="11.5">dry-run</text>
+    <rect x="424" y="350" width="112" height="56" rx="8" fill="#fbefff" stroke="#8250df" stroke-width="2"/><text x="480" y="374" fill="#8250df" font-weight="700">사람 승인</text><text x="480" y="394" fill="#8250df" font-size="11.5">여기서 멈춤</text>
+    <rect x="550" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="606" y="374" fill="#1f2328" font-weight="600">적용</text><text x="606" y="394" fill="#59636e" font-size="11.5">승인한 줄만</text>
+    <rect x="676" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="732" y="374" fill="#1f2328" font-weight="600">독립 검증</text><text x="732" y="394" fill="#59636e" font-size="11.5">다시 세어 보기</text>
+    <rect x="802" y="350" width="112" height="56" rx="8" fill="#f6f8fa" stroke="#d0d7de"/><text x="858" y="374" fill="#1f2328" font-weight="600">기록</text><text x="858" y="394" fill="#59636e" font-size="11.5">moves_v2.csv</text>
+  </g>
+  <g stroke="#59636e" stroke-width="1.6" marker-end="url(#a)">
+    <path d="M158,378 L170,378"/><path d="M284,378 L296,378"/><path d="M410,378 L422,378"/><path d="M536,378 L548,378"/><path d="M662,378 L674,378"/><path d="M788,378 L800,378"/>
+  </g>
+  <path d="M858,408 L858,428 L102,428 L102,410" fill="none" stroke="#59636e" stroke-width="1.4" stroke-dasharray="4 4" marker-end="url(#a)"/>
+  <text x="480" y="444" font-size="12" fill="#59636e" text-anchor="middle">다음 묶음 — 한 번에 한 단계, 검증을 통과해야 다음으로</text>
+
+  <!-- ③ 유지 -->
+  <text x="30" y="488" font-size="15" font-weight="700" fill="#0969da">③ 정리 뒤 — 정리한 상태를 지킨다</text>
+  <g>
+    <rect x="30" y="504" width="210" height="110" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="48" y="532" font-size="14.5" font-weight="700" fill="#1f2328">매일 감시</text>
+    <text x="48" y="556" font-size="12.5" fill="#59636e">이름·크기 사진을 찍어</text>
+    <text x="48" y="576" font-size="12.5" fill="#59636e">어제와 비교. 사라짐·</text>
+    <text x="48" y="596" font-size="12.5" fill="#59636e">새 0바이트는 그날 알림</text>
+    <rect x="260" y="504" width="210" height="110" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="278" y="532" font-size="14.5" font-weight="700" fill="#1f2328">주 1회 제안</text>
+    <text x="278" y="556" font-size="12.5" fill="#59636e">새 파일·중복·다운로드에</text>
+    <text x="278" y="576" font-size="12.5" fill="#59636e">흩어진 문서를 묶어</text>
+    <text x="278" y="596" font-size="12.5" fill="#59636e">제안 → 승인 → 적용</text>
+    <rect x="490" y="504" width="210" height="110" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="508" y="532" font-size="14.5" font-weight="700" fill="#1f2328">서류 체크기</text>
+    <text x="508" y="556" font-size="12.5" fill="#59636e">거래마다 필수 서류가</text>
+    <text x="508" y="576" font-size="12.5" fill="#59636e">다 있는지 검사.</text>
+    <text x="508" y="596" font-size="12.5" fill="#59636e">빠지면 경고 목록</text>
+    <rect x="720" y="504" width="210" height="110" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="738" y="532" font-size="14.5" font-weight="700" fill="#1f2328">관제탑</text>
+    <text x="738" y="556" font-size="12.5" fill="#59636e">폴더 지도·채울 서류·</text>
+    <text x="738" y="576" font-size="12.5" fill="#59636e">최근 변화를 한 화면에.</text>
+    <text x="738" y="596" font-size="12.5" fill="#59636e">이 컴퓨터에서만 열림</text>
+  </g>
+</svg>

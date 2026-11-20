@@ -8,6 +8,16 @@
 
 설명서·사용 방법(한 페이지, 평이한 말로): [`docs/README.html`](docs/README.html) — 받아서 브라우저로 열면 된다.
 
+## 한눈에 보기
+
+![file-org 한눈에 보기: 모으기, 한 바퀴, 정리 뒤 유지](docs/img/overview.svg)
+
+### 온톨로지 — 정리가 끝난 뒤
+
+폴더 경로만으로는 "이 서류들이 한 거래의 증빙 세트"라는 사실이 남지 않습니다. 개체 몇 개와 관계를 따로 적어 두고, 세트마다 필수 서류 규칙을 걸어 빠진 서류를 코드가 찾게 합니다(`check_docsets.py`). 자세한 내용은 [`references/ontology.md`](references/ontology.md), 절차는 [`references/docsets.md`](references/docsets.md).
+
+![온톨로지: 개체와 관계, 세트 규칙 검사, 세 층](docs/img/ontology.svg)
+
 ## 구성
 
 ```
@@ -20,6 +30,8 @@ references/ontology.md   그 다음: 관계를 그래프로 다루는 최소 온
 scripts/                 inventory · find_dupes · apply_moves · copy_tree · evict_icloud(macOS)
                          check_docsets · extract_zip_only · control_tower(관제탑) · watch(지속 관리)
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
+docs/README.html         설명서(한 페이지, 그림 포함)
+docs/img/                한눈에 보기 · 온톨로지 그림(SVG)
 ```
 
 ## 설치
