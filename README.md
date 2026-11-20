@@ -6,6 +6,8 @@
 
 실제 2개월짜리 정리 프로젝트(저장소 4곳, 2만여 파일)에서 나온 절차입니다. macOS에서 검증했고, Windows 11에서는 기본 정리 도구(측정·중복·적용·복사)까지 확인했습니다(아래 "알려진 한계").
 
+![file-org 15초 요약: 모으기 → 승인 → 검사 → 지키기](docs/img/kick.gif)
+
 설명서·사용 방법(한 페이지, 평이한 말로): [`docs/README.html`](docs/README.html) — 받아서 브라우저로 열면 된다.
 
 ## 한눈에 보기
@@ -32,7 +34,7 @@ scripts/                 inventory · find_dupes · apply_moves · copy_tree · 
 tests/smoke_test.py      새 환경에서 먼저 돌리는 자체 검사
 hooks/                   선택: Claude Code 디스크 가드 훅
 docs/README.html         설명서(한 페이지, 그림 포함)
-docs/img/                한눈에 보기 · 온톨로지 그림(SVG)
+docs/img/                15초 요약 GIF · 한눈에 보기 · 온톨로지 그림(SVG)
 ```
 
 ## 설치
