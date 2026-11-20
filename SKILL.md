@@ -77,7 +77,7 @@ Downloads·Desktop의 느슨한 파일은 마스터로 이동하되, 마스터�
 | `copy_tree.py SRC DST [--exclude ...]` | 클라우드 전용 원본도 견디는 파일 단위 복사(재시도·재개·검증) | 복사(삭제·덮어쓰기 없음, `.part`에 쓴 뒤 이름 변경, 동명 다른 파일은 충돌로 보고) |
 | `check_docsets.py --root DIR --rules JSON [--out D --name N]` | 거래 폴더별 필수 서류 검사(있음·zip 안에만·다른 폴더·부족·없음) | 읽기 전용, 보고서만 |
 | `extract_zip_only.py --root DIR --log LOG [--apply]` | 제출 zip 안에만 있는 서류를 낱개로 복사 | dry-run, zip 유지, 덮어쓰기 없음 |
-| `watch.py --root R --state D [--scatter …]` | 지속 관리: 매일 사진 찍고 직전과 비교(사라짐·새 0바이트·이동·새 파일·중복 후보·흩어짐) | 읽기 전용 |
+| `watch.py --root R --state D [--scatter …] [--against-days N]` | 지속 관리: 매일 사진 찍고 직전과 비교(사라짐·새 0바이트·이동·새 파일·중복 후보·흩어짐). `--against-days 7`은 주간 제안용 비교(사진 저장 안 함). 예약 실행은 산출물로 확인(references/docsets.md 6절) | 읽기 전용 |
 | `control_tower.py --root R [--checks D --watch D --refresh-cmd C]` | 관제탑: 폴더 지도·사업 보드·할 일·최근 기록, 새로고침 버튼 | 보기 전용, 127.0.0.1 |
 | `evict_icloud.swift` | iCloud 로컬 사본 축출(클라우드 원본 불변), **macOS 전용** | `swiftc -O evict_icloud.swift -o evict_icloud` |
 
